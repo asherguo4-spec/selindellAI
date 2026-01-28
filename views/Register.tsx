@@ -4,10 +4,11 @@ import { Sparkles, User, ShieldCheck, Loader2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase.ts';
 
 interface RegisterProps {
+  userId: string;
   onRegisterSuccess: (nickname: string) => void;
 }
 
-const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
+const Register: React.FC<RegisterProps> = ({ userId, onRegisterSuccess }) => {
   const [nickname, setNickname] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -16,7 +17,6 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
     setIsSubmitting(true);
     
     try {
-      const userId = '82930415-0000-0000-0000-000000000000';
       const { error } = await supabase.from('users').upsert({
         id: userId,
         nickname: nickname,
@@ -47,14 +47,14 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
         欢迎来到 Selindell，请输入你的造物主代号，开启 AI 定制收藏品时代。
       </p>
 
-      <div className="w-full space-y-6">
-        <div className="glass-card rounded-[24px] p-5 border-purple-500/20">
+      <div className="w-full space-y-8">
+        <div className="border-b border-white/10 pb-4 px-2">
           <div className="flex items-center space-x-4">
-            <User size={20} className="text-purple-400" />
+            <User size={20} className="text-purple-400 shrink-0" />
             <input 
               type="text" 
               placeholder="输入你的昵称..."
-              className="bg-transparent border-none focus:ring-0 text-lg font-bold w-full text-white placeholder:text-gray-700"
+              className="bg-transparent border-none focus:ring-0 text-xl font-bold w-full text-white placeholder:text-gray-800"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
             />
@@ -78,7 +78,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess }) => {
 
       <div className="mt-12 flex items-center space-x-2 text-[10px] text-gray-600 font-bold tracking-widest uppercase">
         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-        <span>Supabase 云端数据库实时同步</span>
+        <span>私有化设备标识隔离</span>
       </div>
     </div>
   );
