@@ -27,10 +27,7 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
     setSubmitted(false);
 
     try {
-      const userId = '82930415-0000-0000-0000-000000000000'; // 使用 App 中定义的固定 ID
-      
-      // 这里的 'feedbacks' 表需要你在 Supabase 中创建
-      // 字段建议：content (text), contact (text), user_id (uuid), created_at (timestamp)
+      const userId = '82930415-0000-0000-0000-000000000000'; 
       const { error } = await supabase.from('feedbacks').insert([
         {
           content: feedback.trim(),
@@ -44,7 +41,6 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
       setSubmitted(true);
       setFeedback('');
       setContactInfo('');
-      // 3秒后重置成功状态，允许再次反馈
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err: any) {
       console.error("Feedback submission failed:", err);
@@ -61,7 +57,6 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
         <h2 className="text-xl font-bold">联系客服</h2>
       </div>
 
-      {/* Online Options */}
       <div className="grid grid-cols-2 gap-4 mb-10">
         <button className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-3 hover:border-purple-500/40 transition-colors">
           <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
@@ -79,7 +74,6 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
         </button>
       </div>
 
-      {/* FAQ Section */}
       <div className="mb-10">
         <div className="flex items-center space-x-2 mb-4 px-1">
           <HelpCircle size={16} className="text-purple-400" />
@@ -100,27 +94,27 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Feedback Form */}
       <div className="mb-8">
         <div className="flex items-center space-x-2 mb-4 px-1">
           <Send size={16} className="text-purple-400" />
           <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">问题反馈</h3>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="glass-card rounded-3xl p-4 border-white/5 focus-within:border-purple-500/30 transition-colors">
+          {/* 恢复背景：包裹层使用 glass-card 确保视觉上是一个输入框 */}
+          <div className="glass-card rounded-3xl p-4 border-white/10 transition-colors focus-within:border-purple-500/30">
             <textarea 
-              className="w-full bg-transparent border-none focus:ring-0 text-sm h-32 resize-none placeholder:text-gray-700 text-white"
+              className="w-full bg-transparent border-none focus:ring-0 text-base h-32 resize-none placeholder:text-gray-800 text-white"
               placeholder="请详细描述您遇到的问题或您的宝贵建议..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               disabled={isSubmitting}
             />
           </div>
-          <div className="glass-card rounded-2xl p-4 border-white/5 flex items-center space-x-3 focus-within:border-purple-500/30 transition-colors">
-            <Mail size={18} className="text-gray-600" />
+          <div className="glass-card rounded-2xl px-4 py-3 border-white/10 flex items-center space-x-3 transition-colors focus-within:border-purple-500/30">
+            <Mail size={18} className="text-gray-600 shrink-0" />
             <input 
               type="text" 
-              className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-gray-700 text-white"
+              className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-gray-800 text-white"
               placeholder="您的联系方式 (手机或邮箱)"
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
