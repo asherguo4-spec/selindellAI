@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, Quote, AlertTriangle, Sparkles, UserPlus } from 'lucide-react';
+import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, Quote, AlertTriangle, Sparkles, UserPlus, Info } from 'lucide-react';
 import { AppView, UserProfile } from '../types.ts';
 
 interface ProfileProps {
@@ -130,12 +130,20 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         {!isGuest && (
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full py-5 rounded-[24px] border border-red-500/30 text-red-500 font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors"
+            className="w-full py-5 rounded-[24px] border border-red-500/30 text-red-500 font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
           >
             <LogOut size={20} />
-            <span>退出并抹除云端档案</span>
+            <span>退出登录</span>
           </button>
         )}
+
+        {/* Build Version Indicator */}
+        <div className="flex items-center justify-center space-x-2 mt-8 opacity-20 hover:opacity-100 transition-opacity">
+          <Info size={10} className="text-gray-500" />
+          <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
+            Core Build: 2026.01.28-v2.hotfix
+          </span>
+        </div>
       </div>
 
       {/* Logout Confirmation Dialog */}
