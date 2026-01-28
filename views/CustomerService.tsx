@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, MessageCircle, Mail, HelpCircle, Send, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, MessageCircle, Mail, HelpCircle, Send, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase.ts';
 
 interface CustomerServiceProps {
+  userId: string;
   onBack: () => void;
 }
 
-const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
+const CustomerService: React.FC<CustomerServiceProps> = ({ userId, onBack }) => {
   const [feedback, setFeedback] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,10 +25,8 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
     if (!feedback.trim()) return;
     
     setIsSubmitting(true);
-    setSubmitted(false);
-
     try {
-      const userId = '82930415-0000-0000-0000-000000000000'; 
+      // 尝试插入，带上 user_id
       const { error } = await supabase.from('feedbacks').insert([
         {
           content: feedback.trim(),
@@ -36,7 +35,20 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
         }
       ]);
 
-      if (error) throw error;
+      if (error) {
+        // 如果是因为 user_id 不存在，尝试不带 user_id 再次提交
+        if (error.message.includes('user_id') || error.code === '42703') {
+          const { error: retryError } = await supabase.from('feedbacks').insert([
+            {
+              content: feedback.trim(),
+              contact: contactInfo.trim()
+            }
+          ]);
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
 
       setSubmitted(true);
       setFeedback('');
@@ -44,7 +56,7 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err: any) {
       console.error("Feedback submission failed:", err);
-      alert(`反馈提交失败: ${err.message || '请检查数据库 feedbacks 表是否存在'}`);
+      alert(`反馈提交失败: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -58,14 +70,14 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-10">
-        <button className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-3 hover:border-purple-500/40 transition-colors">
+        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-3 border-white/5">
           <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
             <MessageCircle size={24} />
           </div>
           <span className="font-bold text-sm">在线咨询</span>
           <span className="text-[10px] text-gray-500">9:00 - 22:00</span>
         </button>
-        <button className="glass-card p-6 rounded-3xl flex flex-col items-center space-y-3 hover:border-purple-500/40 transition-colors">
+        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-3 border-white/5">
           <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
             <Mail size={24} />
           </div>
@@ -75,10 +87,7 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
       </div>
 
       <div className="mb-10">
-        <div className="flex items-center space-x-2 mb-4 px-1">
-          <HelpCircle size={16} className="text-purple-400" />
-          <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">常见问题</h3>
-        </div>
+        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-1">常见问题</h3>
         <div className="space-y-3">
           {faqs.map((faq, idx) => (
             <details key={idx} className="glass-card rounded-2xl group border-white/5">
@@ -95,27 +104,23 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
       </div>
 
       <div className="mb-8">
-        <div className="flex items-center space-x-2 mb-4 px-1">
-          <Send size={16} className="text-purple-400" />
-          <h3 className="text-sm font-bold text-gray-300 uppercase tracking-widest">问题反馈</h3>
-        </div>
+        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-1">问题反馈</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 恢复背景：包裹层使用 glass-card 确保视觉上是一个输入框 */}
-          <div className="glass-card rounded-3xl p-4 border-white/10 transition-colors focus-within:border-purple-500/30">
+          <div className="glass-card rounded-[28px] p-4 border-white/10 focus-within:border-purple-500/30 transition-colors">
             <textarea 
-              className="w-full bg-transparent border-none focus:ring-0 text-base h-32 resize-none placeholder:text-gray-800 text-white"
-              placeholder="请详细描述您遇到的问题或您的宝贵建议..."
+              className="w-full bg-transparent border-none focus:ring-0 text-sm h-32 resize-none placeholder:text-gray-800 text-white leading-relaxed"
+              placeholder="您的建议将直接发送给造物主团队..."
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               disabled={isSubmitting}
             />
           </div>
-          <div className="glass-card rounded-2xl px-4 py-3 border-white/10 flex items-center space-x-3 transition-colors focus-within:border-purple-500/30">
+          <div className="glass-card rounded-[20px] px-4 py-3 border-white/10 flex items-center space-x-3 focus-within:border-purple-500/30 transition-colors">
             <Mail size={18} className="text-gray-600 shrink-0" />
             <input 
               type="text" 
               className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-gray-800 text-white"
-              placeholder="您的联系方式 (手机或邮箱)"
+              placeholder="您的联系方式 (选填)"
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
               disabled={isSubmitting}
@@ -125,33 +130,14 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ onBack }) => {
           <button 
             type="submit"
             disabled={isSubmitting || !feedback.trim()}
-            className={`w-full h-14 rounded-2xl flex items-center justify-center space-x-2 font-bold transition-all ${
-              isSubmitting || !feedback.trim() 
-                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                : 'purple-gradient shadow-xl shadow-purple-500/30 active:scale-95'
+            className={`w-full h-16 rounded-[24px] flex items-center justify-center space-x-2 font-bold transition-all ${
+              isSubmitting || !feedback.trim() ? 'bg-gray-800 text-gray-500' : 'purple-gradient active:scale-95 shadow-xl shadow-purple-500/30'
             }`}
           >
-            {isSubmitting ? (
-              <span className="flex items-center space-x-2">
-                <Loader2 size={20} className="animate-spin" />
-                <span>正在传送至云端...</span>
-              </span>
-            ) : submitted ? (
-              <span className="flex items-center space-x-2 text-green-400">
-                <CheckCircle2 size={20} />
-                <span>反馈已收到，感谢！</span>
-              </span>
-            ) : (
-              <span>提交反馈</span>
-            )}
+            {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : submitted ? <CheckCircle2 size={20} /> : <Send size={20} />}
+            <span>{isSubmitting ? '发送中...' : submitted ? '已收到反馈' : '提交反馈'}</span>
           </button>
         </form>
-      </div>
-
-      <div className="text-center p-4">
-        <p className="text-[10px] text-gray-700 italic tracking-widest uppercase">
-          Selindell AI Feedback Engine v1.0
-        </p>
       </div>
     </div>
   );
