@@ -1,26 +1,39 @@
 
 import React, { useEffect, useState } from 'react';
 import { GeneratedCreation } from '../types';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase.ts'; // 显式包含 .ts 后缀帮助打包
+import { Loader2, RefreshCw, AlertCircle, Database } from 'lucide-react';
+import { supabase } from '../lib/supabase.ts';
 
 interface OrdersProps {
+  userId: string;
   creations: GeneratedCreation[];
 }
 
-const Orders: React.FC<OrdersProps> = ({ creations }) => {
+const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
   const [dbOrders, setDbOrders] = useState<GeneratedCreation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [schemaError, setSchemaError] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
+    setSchemaError(false);
     try {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
+        .eq('user_id', userId)
         .order('create_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // 如果报错提示列不存在 (PostgreSQL 错误码 42703)
+        if (error.message.includes('user_id') || error.code === '42703') {
+          console.warn("数据库架构未升级：缺少 user_id 列，已转为本地馆藏模式。");
+          setSchemaError(true);
+          setDbOrders([]);
+          return;
+        }
+        throw error;
+      }
 
       const mappedData: GeneratedCreation[] = (data || []).map(item => ({
         id: item.id,
@@ -41,8 +54,9 @@ const Orders: React.FC<OrdersProps> = ({ creations }) => {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => { fetchOrders(); }, [userId]);
 
+  // 合并本地临时生成的作品和数据库拉取的作品
   const allOrders = [...dbOrders];
   const existingIds = new Set(allOrders.map(o => o.id));
   creations.forEach(c => {
@@ -54,15 +68,23 @@ const Orders: React.FC<OrdersProps> = ({ creations }) => {
   if (loading && dbOrders.length === 0) return (
     <div className="flex flex-col items-center justify-center py-40">
       <Loader2 className="animate-spin text-purple-500 mb-4" size={32} />
-      <p className="text-gray-500 text-sm">正在同步云端数据...</p>
+      <p className="text-gray-500 text-sm">正在同步您的私人馆藏...</p>
     </div>
   );
 
   return (
     <div className="p-6 pb-24">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold">我的造物馆</h2>
-        <button onClick={fetchOrders} className="p-2 bg-white/5 rounded-full text-gray-400">
+        <div>
+          <h2 className="text-2xl font-bold">我的造物馆</h2>
+          {schemaError && (
+            <div className="flex items-center space-x-1 mt-1">
+              <Database size={10} className="text-orange-500" />
+              <span className="text-[10px] text-orange-500/70 font-bold uppercase tracking-tighter">Local Isolation Mode</span>
+            </div>
+          )}
+        </div>
+        <button onClick={fetchOrders} className="p-2 bg-white/5 rounded-full text-gray-400 active:rotate-180 transition-transform">
           <RefreshCw size={20} />
         </button>
       </div>
@@ -70,20 +92,26 @@ const Orders: React.FC<OrdersProps> = ({ creations }) => {
       {allOrders.length === 0 ? (
         <div className="text-center py-20 text-gray-500">
           <AlertCircle size={48} className="mx-auto mb-4 opacity-20" />
-          <p>暂无作品数据</p>
+          <p className="text-sm">暂无作品，快去首页创作吧</p>
         </div>
       ) : (
         <div className="grid gap-6">
           {allOrders.map((order) => (
-            <div key={order.id} className="glass-card rounded-[32px] p-4 flex space-x-4 border-white/5">
-              <img src={order.imageUrl} className="w-24 h-32 rounded-2xl object-cover" />
-              <div className="flex-1">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-bold uppercase">
-                  {order.status}
-                </span>
-                <h3 className="font-bold text-white mt-2 mb-1">{order.title}</h3>
-                <p className="text-xs text-gray-500">{order.style}</p>
-                <p className="text-[10px] text-gray-600 mt-4">{new Date(order.timestamp).toLocaleString()}</p>
+            <div key={order.id} className="glass-card rounded-[32px] p-4 flex space-x-4 border-white/5 animate-in fade-in slide-in-from-bottom-2">
+              <div className="w-24 h-32 rounded-2xl overflow-hidden bg-white/5 shrink-0">
+                <img src={order.imageUrl} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 flex flex-col justify-between py-1">
+                <div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-bold uppercase tracking-tighter">
+                      {order.status}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-white mt-2 text-sm line-clamp-1">{order.title}</h3>
+                  <p className="text-[10px] text-gray-500 mt-1">{order.style}</p>
+                </div>
+                <p className="text-[9px] text-gray-700 font-mono">{new Date(order.timestamp).toLocaleDateString()}</p>
               </div>
             </div>
           ))}
