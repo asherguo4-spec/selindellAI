@@ -141,7 +141,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         <div className="flex items-center justify-center space-x-2 mt-8 opacity-20 hover:opacity-100 transition-opacity">
           <Info size={10} className="text-gray-500" />
           <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
-            Core Build: 2026.01.28-v2.hotfix
+            Core Build: 2026.01.28-v3.black_theme
           </span>
         </div>
       </div>

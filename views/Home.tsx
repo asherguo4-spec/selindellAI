@@ -245,10 +245,10 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
             <p className="text-gray-400 text-sm">定义属于你的限量版 AI 收藏品</p>
           </div>
 
-          {/* 恢复背景：重新添加 glass-card 背景和边框，但 textarea 内部去掉聚焦轮廓 */}
-          <div className="glass-card rounded-[32px] p-6 mb-8 relative border-white/10 transition-all focus-within:border-purple-500/30">
+          {/* 重点优化：placeholder 颜色提升，避免看不清 */}
+          <div className="glass-card rounded-[32px] p-6 mb-8 relative border-white/10 transition-all focus-within:border-purple-500/40 bg-white/[0.02]">
             <textarea
-              className="w-full bg-transparent border-none focus:ring-0 text-xl font-medium placeholder:text-gray-800 h-36 resize-none custom-scrollbar text-white pb-12"
+              className="w-full bg-transparent border-none focus:ring-0 text-xl font-medium placeholder:text-white/20 h-36 resize-none custom-scrollbar text-white pb-12 leading-relaxed"
               placeholder="输入你的设计灵感，比如“赛博朋克风格的灵狐”..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -257,7 +257,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
               <button
                 onClick={handleExpandPrompt}
                 disabled={!prompt.trim() || isExpanding}
-                className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-purple-500/10 text-purple-400 active:scale-95 disabled:opacity-30 transition-all border border-purple-500/10"
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-purple-500/10 text-purple-400 active:scale-95 disabled:opacity-30 transition-all border border-purple-500/20"
               >
                 {isExpanding ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
                 <span className="text-xs font-bold">AI 扩写</span>
