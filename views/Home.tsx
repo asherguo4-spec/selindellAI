@@ -121,7 +121,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
               <span className="text-xs font-black tracking-[0.2em] text-purple-400 uppercase">人人都是造物主</span>
             </div>
             <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Selindell <span className="text-purple-500">造物</span></h1>
-            <p className="text-gray-400 text-sm">输入灵感，生成 360° 可打印手办</p>
+            <p className="text-gray-400 text-sm">输入灵感，生成专属于你的手办</p>
           </div>
 
           <div className="glass-card rounded-[32px] p-6 mb-8 relative border-white/10 bg-white/[0.02]">
