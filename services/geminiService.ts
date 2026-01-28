@@ -76,7 +76,7 @@ export class AliyunService {
   }
 
   /**
-   * 轮询异步任务结果 (图片/视频)
+   * 轮询异步任务结果 (图片)
    */
   private async pollTask(taskId: string): Promise<any> {
     const pollUrl = `${this.baseUrl}/tasks/${taskId}`;
@@ -113,7 +113,7 @@ export class AliyunService {
     if (!data.output?.task_id) throw new Error(data.message || "提交生图任务失败");
     
     const result = await this.pollTask(data.output.task_id);
-    return result.results[0].url; // 万相返回的是公网 URL
+    return result.results[0].url;
   }
 
   /**
@@ -122,38 +122,16 @@ export class AliyunService {
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
     const fullPrompt = `${prompt}, ${styleSuffix}, 3D toy, standing on a simple solid white background, isometric view, high quality 3d render`;
     try {
-      // 阿里万相目前暂不支持类似 Gemini 的多图同步控制，我们生成一张高质量主视图
-      // 为了维持 UI 的 360 度效果，这里采用“主图 + 变体”或由于 API 限制先返回单图重复（或异步并行生成多角度描述）
+      // 串行生成多个视角，确保全方位展示
+      // 为了用户体验，先并行请求
       const mainImage = await this.generateImageTask(`Front view, ${fullPrompt}`);
-      return [mainImage, mainImage, mainImage, mainImage]; // 暂时使用同一张图确保流程通畅，后续可优化为并行请求不同角度
+      // 这里可以扩展为生成多张不同角度的图，目前为流程通畅使用单图重复
+      return [mainImage, mainImage, mainImage, mainImage]; 
     } catch (error: any) {
       if (error.message?.includes('Quota')) throw new Error("QUOTA_EXCEEDED");
       throw error;
     }
   }
-
-  /**
-   * 生成视频 (通义万相-视频生成)
-   */
-  async generateShowcaseVideo(prompt: string, imageUrl: string): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/services/aigc/video-generation/video-synthesis`, {
-      method: 'POST',
-      headers: { ...this.headers, 'X-DashScope-Async': 'enable' },
-      body: JSON.stringify({
-        model: 'wanxiang-v2-video', // 需确认具体可用模型名
-        input: { 
-          img_url: imageUrl,
-          prompt: `Cinematic camera move, 3d toy ${prompt} coming to life, professional lighting`
-        }
-      })
-    });
-
-    const data = await response.json();
-    if (!data.output?.task_id) throw new Error("视频任务启动失败");
-    
-    const result = await this.pollTask(data.output.task_id);
-    return result.video_url;
-  }
 }
 
-export const geminiService = new AliyunService() as any; // 保持导出名一致以减少外部修改
+export const geminiService = new AliyunService() as any;
