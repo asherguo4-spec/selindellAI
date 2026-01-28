@@ -2,13 +2,11 @@
 /**
  * Aliyun DashScope Service Integration
  * 适配最新的通义万相 2.6 (Wan2.6-t2i) 协议
- * 已通过 Vite Proxy 解决跨域问题
  */
 
 export class AliyunService {
-  // 注意：在浏览器环境使用代理时，baseUrl 应该指向 Vite 配置的代理前缀
   private baseUrl = '/aliyun-api';
-  private apiKey = process.env.API_KEY;
+  private apiKey = (process.env.API_KEY || '').trim();
 
   private get headers() {
     return {
@@ -19,9 +17,10 @@ export class AliyunService {
   }
 
   /**
-   * 文本生成/扩写 (Qwen-Plus)
+   * 文本生成/扩写
    */
   async expandPrompt(prompt: string): Promise<string> {
+    console.log("TS: 正在扩写 Prompt...", prompt);
     try {
       const response = await fetch(`${this.baseUrl}/services/aigc/text-generation/generation`, {
         method: 'POST',
@@ -30,7 +29,7 @@ export class AliyunService {
           model: 'qwen-plus',
           input: {
             messages: [
-              { role: 'system', content: '你是一个潮玩艺术家。请将用户的灵感扩写成适合AI生图的专业描述词，重点描述材质（如PVC、树脂、半透明）、细节和配色。中文表达，100字以内。只需返回扩写后的内容。' },
+              { role: 'system', content: '你是一个潮玩艺术家。将灵感扩写成50字以内的专业生图描述词，包含材质（PVC/树脂）、细节。只返回描述词。' },
               { role: 'user', content: prompt }
             ]
           }
@@ -38,18 +37,22 @@ export class AliyunService {
       });
 
       const data = await response.json();
-      if (data.code) throw new Error(data.message || "文本生成失败");
+      if (data.code) {
+        console.error("TS: 文本生成 API 报错:", data);
+        return prompt;
+      }
       return data.output?.text?.trim() || prompt;
-    } catch (error: any) {
-      console.error("Aliyun Text Error:", error);
-      throw error;
+    } catch (error) {
+      console.error("TS: 文本扩写网络请求失败:", error);
+      return prompt;
     }
   }
 
   /**
-   * 生成背景故事与属性
+   * 生成背景故事
    */
   async generateLoreAndStats(prompt: string): Promise<{title: string, lore: string, stats: any}> {
+    console.log("TS: 正在构思背景故事...");
     try {
       const response = await fetch(`${this.baseUrl}/services/aigc/text-generation/generation`, {
         method: 'POST',
@@ -58,8 +61,8 @@ export class AliyunService {
           model: 'qwen-plus',
           input: {
             messages: [
-              { role: 'system', content: '请为手办设计名字、背景故事和属性。返回严格的JSON格式：{"title": "...", "lore": "...", "stats": {"power": 80, "agility": 70, "soul": 90, "rarity": "Legendary"}}' },
-              { role: 'user', content: `基于灵感: ${prompt}` }
+              { role: 'system', content: '设计手办名字、故事和属性。返回严格JSON: {"title": "...", "lore": "...", "stats": {"power": 80, "agility": 70, "soul": 90, "rarity": "Legendary"}}' },
+              { role: 'user', content: prompt }
             ]
           },
           parameters: { response_format: { type: 'json_object' } }
@@ -67,92 +70,93 @@ export class AliyunService {
       });
 
       const data = await response.json();
-      const content = data.output?.text || "{}";
-      return JSON.parse(content);
+      return JSON.parse(data.output?.text || "{}");
     } catch (error) {
-      return {
-        title: "无名造物",
-        lore: "来自数字荒野的神秘存在。",
-        stats: { power: 50, agility: 50, soul: 50, rarity: "Common" }
-      };
+      console.warn("TS: 故事生成失败，使用默认值");
+      return { title: "数字幻兽", lore: "来自虚空的造物。", stats: { power: 50, agility: 50, soul: 50, rarity: "Rare" } };
     }
   }
 
   /**
-   * 轮询异步任务结果
+   * 轮询异步任务 (带超时和详细报错)
    */
   private async pollTask(taskId: string): Promise<any> {
+    console.log(`TS: 开始轮询任务 [${taskId}]...`);
     const pollUrl = `${this.baseUrl}/tasks/${taskId}`;
     let attempts = 0;
-    while (attempts < 60) {
-      const response = await fetch(pollUrl, { 
-        headers: { 'Authorization': `Bearer ${this.apiKey}` } 
-      });
-      const data = await response.json();
-      const status = data.output?.task_status;
+    const maxAttempts = 40; // 约 2 分钟
 
-      if (status === 'SUCCEEDED') return data.output;
-      if (status === 'FAILED') throw new Error(data.output?.message || "任务生成失败");
-      
-      await new Promise(r => setTimeout(r, 3000));
-      attempts++;
+    while (attempts < maxAttempts) {
+      try {
+        const response = await fetch(pollUrl, { 
+          headers: { 'Authorization': `Bearer ${this.apiKey}` } 
+        });
+        const data = await response.json();
+        
+        // 关键修复：如果接口报错(如401)，直接抛出异常，不再循环
+        if (data.code) {
+          throw new Error(`API错误 (${data.code}): ${data.message}`);
+        }
+
+        const status = data.output?.task_status;
+        console.log(`TS: 轮询中 (${attempts+1}/${maxAttempts}) - 状态: ${status}`);
+
+        if (status === 'SUCCEEDED') {
+          console.log("TS: 任务成功!", data.output);
+          return data.output;
+        }
+        if (status === 'FAILED') {
+          throw new Error(data.output?.message || "阿里云生成任务失败");
+        }
+        
+        // 继续等待
+        await new Promise(r => setTimeout(r, 3000));
+        attempts++;
+      } catch (e: any) {
+        console.error("TS: 轮询过程中出错:", e);
+        throw e;
+      }
     }
-    throw new Error("任务超时");
+    throw new Error("生图超时，请检查网络或稍后重试");
   }
 
   /**
-   * 生成图片 (Wan2.6-t2i)
+   * 提交生图任务 (Wan2.6)
    */
   private async generateImageTask(prompt: string): Promise<string> {
+    console.log("TS: 正在提交 Wan2.6 生成任务...");
     const response = await fetch(`${this.baseUrl}/services/aigc/multimodal-generation/generation`, {
       method: 'POST',
       headers: { ...this.headers, 'X-DashScope-Async': 'enable' },
       body: JSON.stringify({
         model: 'wan2.6-t2i',
         input: {
-          messages: [
-            {
-              role: "user",
-              content: [{ text: prompt }]
-            }
-          ]
+          messages: [{ role: "user", content: [{ text: prompt }] }]
         },
-        parameters: {
-          size: '1024*1024',
-          n: 1
-        }
+        parameters: { size: '1024*1024', n: 1 }
       })
     });
 
     const data = await response.json();
     if (data.code || !data.output?.task_id) {
-      throw new Error(data.message || "提交万相 2.6 任务失败");
+      console.error("TS: 提交任务失败:", data);
+      throw new Error(data.message || "无法连接到通义万相服务");
     }
     
     const result = await this.pollTask(data.output.task_id);
-    return result.results[0].url;
+    const imageUrl = result.results?.[0]?.url;
+    if (!imageUrl) throw new Error("API 未返回有效图片链接");
+    return imageUrl;
   }
 
-  /**
-   * 生成 360° 四视图
-   */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    if (!this.apiKey || this.apiKey.includes('YOUR_API_KEY')) {
-      throw new Error("未检测到有效的 API_KEY，请检查 .env 文件并重启服务。");
+    if (!this.apiKey || this.apiKey.length < 10) {
+      throw new Error("请在 .env 文件中配置有效的 API_KEY 并重启服务");
     }
 
-    const fullPrompt = `Action figure of ${prompt}, ${styleSuffix}, 3D toy, sitting on a simple solid white background, high quality 3d render, detailed textures`;
-    try {
-      const mainImage = await this.generateImageTask(fullPrompt);
-      // 万相 2.6 生成质量很高，暂时使用同一张图作为演示。
-      // 若需要多角度，可在此处循环调用生成不同角度的 Prompt。
-      return [mainImage, mainImage, mainImage, mainImage]; 
-    } catch (error: any) {
-      if (error.message?.includes('Quota') || error.message?.includes('Limit')) {
-        throw new Error("QUOTA_EXCEEDED");
-      }
-      throw error;
-    }
+    const fullPrompt = `${prompt}, ${styleSuffix}, action figure style, 3d toy, studio lighting, white background`;
+    const imageUrl = await this.generateImageTask(fullPrompt);
+    return [imageUrl, imageUrl, imageUrl, imageUrl]; 
   }
 }
 
