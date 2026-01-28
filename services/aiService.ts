@@ -3,6 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 export class SelindellAIService {
   private geminiClient: any;
+  // 仅作为本地调试或未配置环境变量时的极端保底
   private readonly ZHIPU_STABLE_KEY = "08a05cfe50f44549947f6e1a5cb232fa.wqGlh7yjmT1WOR5S";
 
   constructor() {
@@ -10,24 +11,45 @@ export class SelindellAIService {
   }
 
   private async createZhipuToken(): Promise<string> {
-    const rawEnvKey = (process.env.API_KEY || '').trim();
-    let targetKey = rawEnvKey;
-    if (!rawEnvKey.includes('.') || rawEnvKey.toUpperCase().includes('GEMIN')) {
-      targetKey = this.ZHIPU_STABLE_KEY;
+    // 1. 优先尝试获取专用的 ZHIPU_API_KEY
+    const zhipuEnvKey = (process.env.ZHIPU_API_KEY || '').trim();
+    // 2. 获取通用的 API_KEY (可能是 Gemini 也可能是智谱)
+    const generalEnvKey = (process.env.API_KEY || '').trim();
+    
+    let targetKey = zhipuEnvKey;
+
+    // 如果没有专门的 ZHIPU_API_KEY，检查通用的 API_KEY 是否符合智谱的格式（包含点且不是以 AIza 开头）
+    if (!targetKey) {
+      if (generalEnvKey.includes('.') && !generalEnvKey.startsWith('AIza')) {
+        targetKey = generalEnvKey;
+      } else {
+        targetKey = this.ZHIPU_STABLE_KEY;
+      }
     }
+
     const parts = targetKey.split('.');
+    if (parts.length < 2) throw new Error("无效的智谱 API KEY 格式");
+
     const id = parts[parts.length - 2];
     const secret = parts[parts.length - 1];
+    
     const header = { alg: "HS256", sign_type: "SIGN" };
-    const payload = { api_key: id, exp: Math.floor(Date.now() / 1000) + 3600, iat: Math.floor(Date.now() / 1000) };
+    const payload = { 
+      api_key: id, 
+      exp: Math.floor(Date.now() / 1000) + 3600, 
+      iat: Math.floor(Date.now() / 1000) 
+    };
+
     const encode = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
     const unsignedToken = `${encode(header)}.${encode(payload)}`;
+    
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secret);
     const dataData = encoder.encode(unsignedToken);
     const cryptoKey = await window.crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const signature = await window.crypto.subtle.sign("HMAC", cryptoKey, dataData);
     const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    
     return `${unsignedToken}.${signatureBase64}`;
   }
 
@@ -49,9 +71,6 @@ export class SelindellAIService {
     }
   }
 
-  /**
-   * 修改为生成单张图片
-   */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
     const baseDescription = await this.translateAndOptimize(prompt);
     const token = await this.createZhipuToken();
@@ -69,7 +88,6 @@ export class SelindellAIService {
       if (result.error) throw new Error(result.error.message);
       
       const imageUrl = result.data[0].url;
-      // 为了兼容性，返回包含单张图片的数组
       return [imageUrl]; 
     } catch (error: any) {
       throw new Error(error.message || "倾谷引擎铸造失败");
