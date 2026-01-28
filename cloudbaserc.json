@@ -1,0 +1,24 @@
+
+{
+  "version": "2.0",
+  "envId": "{{env.ENV_ID}}",
+  "framework": {
+    "name": "selindell-ai",
+    "plugins": {
+      "client": {
+        "use": "@cloudbase/framework-plugin-website",
+        "inputs": {
+          "buildCommand": "npm install && npm run build",
+          "outputPath": "dist",
+          "cloudPath": "/",
+          "envVariables": {
+            "API_KEY": "{{env.API_KEY}}",
+            "SUPABASE_URL": "{{env.SUPABASE_URL}}",
+            "SUPABASE_ANON_KEY": "{{env.SUPABASE_ANON_KEY}}"
+          },
+          "errorPage": "index.html"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,62 @@
+
+export enum AppView {
+  HOME = 'home',
+  ORDERS = 'orders',
+  PROFILE = 'profile',
+  GENERATING = 'generating',
+  RESULT = 'result',
+  CHECKOUT = 'checkout',
+  SUCCESS = 'success',
+  ADDRESS_LIST = 'address_list',
+  CUSTOMER_SERVICE = 'customer_service',
+  SETTINGS = 'settings',
+  REGISTER = 'register'
+}
+
+export interface CreationStyle {
+  id: string;
+  name: string;
+  description: string;
+  promptSuffix: string;
+  imageUrl: string;
+}
+
+export type CreationStatus = 'pending' | 'paid' | 'shipping' | 'completed';
+
+export interface CreationStats {
+  power: number;
+  agility: number;
+  soul: number;
+  rarity: string;
+}
+
+export interface GeneratedCreation {
+  id: string;
+  title: string;
+  imageUrl: string;
+  imageUrls: string[]; 
+  videoUrl?: string;
+  lore?: string;
+  stats?: CreationStats;
+  style: string;
+  prompt: string;
+  timestamp: number;
+  status: CreationStatus;
+}
+
+export interface UserProfile {
+  nickname: string;
+  id: string;
+  avatar: string;
+  email: string;
+  bio?: string;
+  isRegistered?: boolean;
+}
+
+export interface Address {
+  id: string;
+  name: string;
+  phone: string;
+  location: string;
+  isDefault: boolean;
+}
