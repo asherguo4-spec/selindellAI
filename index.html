@@ -15,7 +15,6 @@
       :root { 
         --primary: #a855f7; 
         --secondary: #6366f1; 
-        /* 核心背景：从深邃紫黑到暗紫色的过渡 */
         --bg-deep: #0a0514; 
       }
       
@@ -27,6 +26,12 @@
         overflow-x: hidden;
       }
 
+      /* 只去掉聚焦时的那层“白框/轮廓”，不影响背景 */
+      input:focus, textarea:focus {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
       /* 氛围背景容器 */
       .bg-ambience {
         position: fixed;
@@ -36,7 +41,6 @@
         overflow: hidden;
       }
 
-      /* 动态浮动光晕 */
       .glow-orb {
         position: absolute;
         width: 400px;
@@ -46,17 +50,8 @@
         opacity: 0.15;
         animation: float 25s infinite alternate ease-in-out;
       }
-      .orb-1 {
-        background: #a855f7;
-        top: 20%;
-        left: -10%;
-      }
-      .orb-2 {
-        background: #6366f1;
-        bottom: 10%;
-        right: -10%;
-        animation-delay: -5s;
-      }
+      .orb-1 { background: #a855f7; top: 20%; left: -10%; }
+      .orb-2 { background: #6366f1; bottom: 10%; right: -10%; animation-delay: -5s; }
 
       @keyframes float {
         0% { transform: translate(0, 0) scale(1); }
@@ -90,7 +85,6 @@
         50% { transform: scale(1.5); opacity: 1; }
       }
 
-      /* 自定义毛玻璃效果 */
       .glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
@@ -121,11 +115,9 @@
 </script>
   </head>
   <body>
-    <!-- 动态背景层 -->
     <div class="bg-ambience">
       <div class="glow-orb orb-1"></div>
       <div class="glow-orb orb-2"></div>
-      <!-- 增加细微的噪点质感，更显高级 -->
       <div style="position: absolute; inset: 0; opacity: 0.02; pointer-events: none; background-image: url('https://www.transparenttextures.com/patterns/stardust.png');"></div>
     </div>
 
