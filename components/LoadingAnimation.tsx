@@ -26,9 +26,9 @@ const LoadingAnimation: React.FC = () => {
       <div className="text-center space-y-4 w-full">
         <div className="space-y-1">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            通义万相 正在造物...
+            通义万相 2.6 正在造物...
           </h2>
-          <p className="text-gray-400 text-xs animate-pulse">正在从数字纬度铸造您的独家收藏品</p>
+          <p className="text-gray-400 text-xs animate-pulse">正在利用最新 Wan2.6 引擎铸造您的独家收藏品</p>
         </div>
 
         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
@@ -39,7 +39,7 @@ const LoadingAnimation: React.FC = () => {
         </div>
         <div className="flex justify-between text-[10px] font-bold text-gray-600 uppercase tracking-widest">
           <span>{Math.floor(progress)}% RENDERING</span>
-          <span>DASH SCOPE ENGINE</span>
+          <span>DASH SCOPE WAN 2.6</span>
         </div>
       </div>
     </div>

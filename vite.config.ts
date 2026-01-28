@@ -1,27 +1,40 @@
 
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  // 必须使用空字符串或 './'，以确保在 TCB 的任何子路径下资源都能正确加载
-  base: '', 
-  define: {
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY),
-    'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL),
-    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY),
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,
-    target: 'es2015',
-    // 确保打包后文件名不带过长哈希，有时 TCB 会有文件路径长度限制
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
+export default defineConfig(({ mode }) => {
+  // 加载环境变量
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
+    plugins: [react()],
+    base: '', 
+    define: {
+      'process.env.API_KEY': JSON.stringify(env.API_KEY),
+      'process.env.SUPABASE_URL': JSON.stringify(env.SUPABASE_URL),
+      'process.env.SUPABASE_ANON_KEY': JSON.stringify(env.SUPABASE_ANON_KEY),
     },
+    server: {
+      proxy: {
+        // 配置代理：将 /aliyun-api 转发到阿里云真实地址
+        '/aliyun-api': {
+          target: 'https://dashscope.aliyuncs.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/aliyun-api/, '/api/v1')
+        }
+      }
+    },
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: false,
+      target: 'es2015',
+      rollupOptions: {
+        output: {
+          manualChunks: undefined,
+        },
+      },
+    }
   }
 })

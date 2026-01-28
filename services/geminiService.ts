@@ -1,12 +1,14 @@
 
 /**
  * Aliyun DashScope Service Integration
- * 替换原有 Gemini 服务，适配中国区网络与阿里云 API 逻辑
+ * 适配最新的通义万相 2.6 (Wan2.6-t2i) 协议
+ * 已通过 Vite Proxy 解决跨域问题
  */
 
 export class AliyunService {
+  // 注意：在浏览器环境使用代理时，baseUrl 应该指向 Vite 配置的代理前缀
+  private baseUrl = '/aliyun-api';
   private apiKey = process.env.API_KEY;
-  private baseUrl = 'https://dashscope.aliyuncs.com/api/v1';
 
   private get headers() {
     return {
@@ -36,15 +38,16 @@ export class AliyunService {
       });
 
       const data = await response.json();
+      if (data.code) throw new Error(data.message || "文本生成失败");
       return data.output?.text?.trim() || prompt;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Aliyun Text Error:", error);
-      return prompt;
+      throw error;
     }
   }
 
   /**
-   * 生成背景故事与属性 (Qwen-Plus JSON Mode)
+   * 生成背景故事与属性
    */
   async generateLoreAndStats(prompt: string): Promise<{title: string, lore: string, stats: any}> {
     try {
@@ -76,41 +79,55 @@ export class AliyunService {
   }
 
   /**
-   * 轮询异步任务结果 (图片)
+   * 轮询异步任务结果
    */
   private async pollTask(taskId: string): Promise<any> {
     const pollUrl = `${this.baseUrl}/tasks/${taskId}`;
     let attempts = 0;
-    while (attempts < 60) { // 最多等3分钟
-      const response = await fetch(pollUrl, { headers: { 'Authorization': `Bearer ${this.apiKey}` } });
+    while (attempts < 60) {
+      const response = await fetch(pollUrl, { 
+        headers: { 'Authorization': `Bearer ${this.apiKey}` } 
+      });
       const data = await response.json();
       const status = data.output?.task_status;
 
       if (status === 'SUCCEEDED') return data.output;
       if (status === 'FAILED') throw new Error(data.output?.message || "任务生成失败");
       
-      await new Promise(r => setTimeout(r, 3000)); // 每3秒查一次
+      await new Promise(r => setTimeout(r, 3000));
       attempts++;
     }
     throw new Error("任务超时");
   }
 
   /**
-   * 生成手办图片 (通义万相 Wanxiang-V21)
+   * 生成图片 (Wan2.6-t2i)
    */
   private async generateImageTask(prompt: string): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/services/aigc/text2image/image-synthesis`, {
+    const response = await fetch(`${this.baseUrl}/services/aigc/multimodal-generation/generation`, {
       method: 'POST',
       headers: { ...this.headers, 'X-DashScope-Async': 'enable' },
       body: JSON.stringify({
-        model: 'wanxiang-v21',
-        input: { prompt },
-        parameters: { n: 1, size: '1024*1024' }
+        model: 'wan2.6-t2i',
+        input: {
+          messages: [
+            {
+              role: "user",
+              content: [{ text: prompt }]
+            }
+          ]
+        },
+        parameters: {
+          size: '1024*1024',
+          n: 1
+        }
       })
     });
 
     const data = await response.json();
-    if (!data.output?.task_id) throw new Error(data.message || "提交生图任务失败");
+    if (data.code || !data.output?.task_id) {
+      throw new Error(data.message || "提交万相 2.6 任务失败");
+    }
     
     const result = await this.pollTask(data.output.task_id);
     return result.results[0].url;
@@ -120,15 +137,20 @@ export class AliyunService {
    * 生成 360° 四视图
    */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    const fullPrompt = `${prompt}, ${styleSuffix}, 3D toy, standing on a simple solid white background, isometric view, high quality 3d render`;
+    if (!this.apiKey || this.apiKey.includes('YOUR_API_KEY')) {
+      throw new Error("未检测到有效的 API_KEY，请检查 .env 文件并重启服务。");
+    }
+
+    const fullPrompt = `Action figure of ${prompt}, ${styleSuffix}, 3D toy, sitting on a simple solid white background, high quality 3d render, detailed textures`;
     try {
-      // 串行生成多个视角，确保全方位展示
-      // 为了用户体验，先并行请求
-      const mainImage = await this.generateImageTask(`Front view, ${fullPrompt}`);
-      // 这里可以扩展为生成多张不同角度的图，目前为流程通畅使用单图重复
+      const mainImage = await this.generateImageTask(fullPrompt);
+      // 万相 2.6 生成质量很高，暂时使用同一张图作为演示。
+      // 若需要多角度，可在此处循环调用生成不同角度的 Prompt。
       return [mainImage, mainImage, mainImage, mainImage]; 
     } catch (error: any) {
-      if (error.message?.includes('Quota')) throw new Error("QUOTA_EXCEEDED");
+      if (error.message?.includes('Quota') || error.message?.includes('Limit')) {
+        throw new Error("QUOTA_EXCEEDED");
+      }
       throw error;
     }
   }

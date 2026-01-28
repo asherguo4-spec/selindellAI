@@ -176,7 +176,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
         <>
           <div className="mt-2 mb-8 text-center relative">
             <div className="inline-block mb-3 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
-              <span className="text-xs font-black tracking-[0.2em] text-purple-400 uppercase">通义引擎 · 丝滑造物</span>
+              <span className="text-xs font-black tracking-[0.2em] text-purple-400 uppercase">人人都是造物主</span>
             </div>
             <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Selindell <span className="text-purple-500">造物</span></h1>
             <p className="text-gray-400 text-sm">定义属于你的限量版收藏品</p>
