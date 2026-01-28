@@ -74,7 +74,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               <span className="text-[10px] font-mono text-purple-400 font-bold">{userProfile.id}</span>
             </div>
           ) : (
-            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">访客模式</div>
+            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">快去注册吧</div>
           )}
           
           {userProfile.bio && (
@@ -95,9 +95,9 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
             >
               <div className="flex items-center space-x-2">
                 <Sparkles size={20} className="animate-pulse" />
-                <span className="text-lg font-black">铸造造物主身份</span>
+                <span className="text-lg font-black">新用户注册</span>
               </div>
-              <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest">同步云端资料 & 专属 ID</p>
+              <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest">设置密码 & 专属 ID</p>
             </button>
           </div>
         )}
@@ -117,7 +117,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
                 <div className="flex flex-col">
                   <span className="font-medium">{item.label}</span>
                   {isGuest && item.label === '收货地址' && (
-                    <span className="text-[9px] text-gray-600 font-bold">需要注册</span>
+                    <span className="text-[9px] text-gray-600 font-bold">快去注册吧</span>
                   )}
                 </div>
               </div>
@@ -154,16 +154,16 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="text-red-500" size={32} />
             </div>
-            <h3 className="text-lg font-bold mb-2 text-white">确认彻底注销？</h3>
+            <h3 className="text-lg font-bold mb-2 text-white">真的要退出登录吗</h3>
             <p className="text-gray-500 text-xs mb-6 leading-relaxed">
-              注销后，您的昵称、简介及同步的地址将从云端数据库中<b>物理抹除</b>。
+              退出登录后，用户资料将不复存在<b>物理抹除</b>。
             </p>
             <div className="space-y-3">
               <button 
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
                 className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold active:scale-95 transition-transform"
               >
-                确认抹除
+                确认退出登录
               </button>
               <button 
                 onClick={() => setShowLogoutConfirm(false)}

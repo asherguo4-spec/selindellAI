@@ -57,7 +57,7 @@ const SettingsView: React.FC<SettingsProps> = ({ userId, profile, onUpdate, onBa
         </div>
         {saveSuccess && (
           <div className="mt-4 px-4 py-1.5 bg-green-500/20 text-green-400 rounded-full text-[10px] font-bold border border-green-500/20 animate-bounce">
-            个人档案已私有加密同步
+            个人档案已存储完成
           </div>
         )}
       </div>

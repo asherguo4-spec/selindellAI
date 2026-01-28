@@ -76,7 +76,7 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
     <div className="p-6 pb-24">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold">我的造物馆</h2>
+          <h2 className="text-2xl font-bold">订单</h2>
           {schemaError && (
             <div className="flex items-center space-x-1 mt-1">
               <Database size={10} className="text-orange-500" />

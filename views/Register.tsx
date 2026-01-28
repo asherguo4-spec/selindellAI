@@ -44,7 +44,7 @@ const Register: React.FC<RegisterProps> = ({ userId, onRegisterSuccess }) => {
 
       <h1 className="text-3xl font-black mb-4">开启造物之旅</h1>
       <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-[240px]">
-        欢迎来到 Selindell，请输入你的造物主代号，开启 AI 定制收藏品时代。
+        欢迎来到 Selindell，请输入你的造物主密码，开启 AI 定制收藏品时代。
       </p>
 
       <div className="w-full space-y-8">
