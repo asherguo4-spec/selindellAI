@@ -11,7 +11,7 @@ import CustomerService from './views/CustomerService.tsx';
 import SettingsView from './views/Settings.tsx';
 import Register from './views/Register.tsx';
 import { supabase } from './lib/supabase.ts';
-import { Loader2, Wifi, WifiOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const FIXED_USER_ID = '82930415-0000-0000-0000-000000000000';
 
@@ -153,9 +153,9 @@ const App: React.FC = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#05020a] flex flex-col items-center justify-center">
+      <div className="max-w-md mx-auto min-h-screen bg-[#0a0514] flex flex-col items-center justify-center">
         <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
-        <p className="text-gray-500 font-bold text-xs tracking-[0.2em] uppercase animate-pulse">Initializing Digital Soul...</p>
+        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase animate-pulse">Initializing Digital Soul</p>
       </div>
     );
   }
@@ -228,21 +228,21 @@ const App: React.FC = () => {
   ].includes(currentView);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#05020a] shadow-2xl relative overflow-hidden flex flex-col">
-      {/* 状态栏：帮你排查数据库 */}
-      <div className="h-1 w-full fixed top-0 left-0 z-[100] flex">
-        <div className={`h-full flex-1 transition-colors duration-1000 ${dbStatus === 'online' ? 'bg-green-500/30' : 'bg-red-500/30'}`}></div>
+    <div className="max-w-md mx-auto min-h-screen bg-transparent shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+      {/* 状态栏 */}
+      <div className="h-1 w-full fixed top-0 left-1/2 -translate-x-1/2 max-w-md z-[100] flex">
+        <div className={`h-full flex-1 transition-colors duration-1000 ${dbStatus === 'online' ? 'bg-green-500/20' : 'bg-red-500/20'}`}></div>
       </div>
 
       {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
-        <header className="h-16 px-6 flex items-center justify-between sticky top-0 z-40 bg-[#05020a]/80 backdrop-blur-md shrink-0">
-          <div className="flex items-center space-x-2">
-             <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
-             <span className="text-lg font-black tracking-tighter italic">SELINDELL</span>
+        <header className="h-20 px-6 flex items-end pb-4 justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
+          <div className="flex items-center space-x-2.5">
+             <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
+             <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
           </div>
           <button 
             onClick={() => setCurrentView(AppView.PROFILE)}
-            className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 active:scale-90 transition-all overflow-hidden"
+            className="w-10 h-10 rounded-full border border-white/10 active:scale-90 transition-all overflow-hidden shadow-lg"
           >
             <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
           </button>
