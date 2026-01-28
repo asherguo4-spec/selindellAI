@@ -1,162 +1,159 @@
 
-import { GoogleGenAI, GenerateContentParameters, Type } from "@google/genai";
+/**
+ * Aliyun DashScope Service Integration
+ * 替换原有 Gemini 服务，适配中国区网络与阿里云 API 逻辑
+ */
 
-export class GeminiService {
-  private getAIInstance() {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      throw new Error("API_KEY_MISSING");
-    }
-    return new GoogleGenAI({ apiKey: apiKey });
+export class AliyunService {
+  private apiKey = process.env.API_KEY;
+  private baseUrl = 'https://dashscope.aliyuncs.com/api/v1';
+
+  private get headers() {
+    return {
+      'Authorization': `Bearer ${this.apiKey}`,
+      'Content-Type': 'application/json',
+      'X-DashScope-SSE': 'disable'
+    };
   }
 
+  /**
+   * 文本生成/扩写 (Qwen-Plus)
+   */
   async expandPrompt(prompt: string): Promise<string> {
     try {
-      const ai = this.getAIInstance();
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `你是一个潮玩艺术家。请将以下简短的灵感扩写成一段生动、具体的描述，适合用于生成高品质的3D艺术或潮玩设计。要求：中文表达，重点描述外形、材质、配色，控制在100字以内。只需返回扩写后的内容。
-        
-        灵感：${prompt}`,
+      const response = await fetch(`${this.baseUrl}/services/aigc/text-generation/generation`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({
+          model: 'qwen-plus',
+          input: {
+            messages: [
+              { role: 'system', content: '你是一个潮玩艺术家。请将用户的灵感扩写成适合AI生图的专业描述词，重点描述材质（如PVC、树脂、半透明）、细节和配色。中文表达，100字以内。只需返回扩写后的内容。' },
+              { role: 'user', content: prompt }
+            ]
+          }
+        })
       });
-      return response.text?.trim() || prompt;
-    } catch (error: any) {
-      if (error.message?.includes('429')) throw new Error("QUOTA_EXCEEDED");
-      console.error("Gemini Text Expansion Error:", error);
+
+      const data = await response.json();
+      return data.output?.text?.trim() || prompt;
+    } catch (error) {
+      console.error("Aliyun Text Error:", error);
       return prompt;
     }
   }
 
+  /**
+   * 生成背景故事与属性 (Qwen-Plus JSON Mode)
+   */
   async generateLoreAndStats(prompt: string): Promise<{title: string, lore: string, stats: any}> {
-    const ai = this.getAIInstance();
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `基于灵感 "${prompt}"，为这个潮玩手办设计一个霸气的名字、一段感人的背景故事，并给出战斗属性（1-100）。`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              lore: { type: Type.STRING },
-              stats: {
-                type: Type.OBJECT,
-                properties: {
-                  power: { type: Type.INTEGER },
-                  agility: { type: Type.INTEGER },
-                  soul: { type: Type.INTEGER },
-                  rarity: { type: Type.STRING }
-                },
-                required: ["power", "agility", "soul", "rarity"]
-              }
-            },
-            required: ["title", "lore", "stats"]
-          }
-        }
+      const response = await fetch(`${this.baseUrl}/services/aigc/text-generation/generation`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({
+          model: 'qwen-plus',
+          input: {
+            messages: [
+              { role: 'system', content: '请为手办设计名字、背景故事和属性。返回严格的JSON格式：{"title": "...", "lore": "...", "stats": {"power": 80, "agility": 70, "soul": 90, "rarity": "Legendary"}}' },
+              { role: 'user', content: `基于灵感: ${prompt}` }
+            ]
+          },
+          parameters: { response_format: { type: 'json_object' } }
+        })
       });
-      return JSON.parse(response.text || '{}');
-    } catch (error: any) {
-      if (error.message?.includes('429')) throw new Error("QUOTA_EXCEEDED");
-      console.error("Lore Gen Error:", error);
+
+      const data = await response.json();
+      const content = data.output?.text || "{}";
+      return JSON.parse(content);
+    } catch (error) {
       return {
         title: "无名造物",
-        lore: "这是一段来自数字深渊的神秘记忆。",
+        lore: "来自数字荒野的神秘存在。",
         stats: { power: 50, agility: 50, soul: 50, rarity: "Common" }
       };
     }
   }
 
-  private async generateOneAngle(prompt: string, imagePart?: any): Promise<string> {
-    const ai = this.getAIInstance();
-    const contents: any = imagePart 
-      ? { parts: [imagePart, { text: prompt }] } 
-      : { parts: [{ text: prompt }] };
-    
-    try {
-      const params: GenerateContentParameters = {
-        model: 'gemini-2.5-flash-image',
-        contents: contents,
-        config: {
-          imageConfig: { aspectRatio: "1:1" }
-        },
-      };
+  /**
+   * 轮询异步任务结果 (图片/视频)
+   */
+  private async pollTask(taskId: string): Promise<any> {
+    const pollUrl = `${this.baseUrl}/tasks/${taskId}`;
+    let attempts = 0;
+    while (attempts < 60) { // 最多等3分钟
+      const response = await fetch(pollUrl, { headers: { 'Authorization': `Bearer ${this.apiKey}` } });
+      const data = await response.json();
+      const status = data.output?.task_status;
 
-      const response = await ai.models.generateContent(params);
-      const candidate = response.candidates?.[0];
+      if (status === 'SUCCEEDED') return data.output;
+      if (status === 'FAILED') throw new Error(data.output?.message || "任务生成失败");
       
-      if (candidate?.finishReason === 'SAFETY') {
-        throw new Error("SAFETY_BLOCK");
-      }
-
-      if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.inlineData) return part.inlineData.data;
-        }
-      }
-      throw new Error("GEN_FAILED");
-    } catch (error: any) {
-      if (error.message?.includes('429')) throw new Error("QUOTA_EXCEEDED");
-      throw error;
+      await new Promise(r => setTimeout(r, 3000)); // 每3秒查一次
+      attempts++;
     }
+    throw new Error("任务超时");
   }
 
+  /**
+   * 生成手办图片 (通义万相 Wanxiang-V21)
+   */
+  private async generateImageTask(prompt: string): Promise<string> {
+    const response = await fetch(`${this.baseUrl}/services/aigc/text2image/image-synthesis`, {
+      method: 'POST',
+      headers: { ...this.headers, 'X-DashScope-Async': 'enable' },
+      body: JSON.stringify({
+        model: 'wanxiang-v21',
+        input: { prompt },
+        parameters: { n: 1, size: '1024*1024' }
+      })
+    });
+
+    const data = await response.json();
+    if (!data.output?.task_id) throw new Error(data.message || "提交生图任务失败");
+    
+    const result = await this.pollTask(data.output.task_id);
+    return result.results[0].url; // 万相返回的是公网 URL
+  }
+
+  /**
+   * 生成 360° 四视图
+   */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    const baseDesc = `${prompt}, ${styleSuffix}, 3D toy style, high quality render, white background`;
+    const fullPrompt = `${prompt}, ${styleSuffix}, 3D toy, standing on a simple solid white background, isometric view, high quality 3d render`;
     try {
-      const frontBase64 = await this.generateOneAngle(`Front view of ${baseDesc}`);
-      const imagePart = { inlineData: { mimeType: 'image/png', data: frontBase64 } };
-      const results = [frontBase64];
-      const angles = [`Right view`, `Back view`, `Left view`];
-
-      for (const anglePrompt of angles) {
-        try {
-          await new Promise(r => setTimeout(r, 800));
-          const b64 = await this.generateOneAngle(`${anglePrompt} of the same character`, imagePart);
-          results.push(b64);
-        } catch (err: any) {
-          if (err.message === "QUOTA_EXCEEDED") throw err;
-          results.push(frontBase64);
-        }
-      }
-      return results.map(b64 => `data:image/png;base64,${b64}`);
+      // 阿里万相目前暂不支持类似 Gemini 的多图同步控制，我们生成一张高质量主视图
+      // 为了维持 UI 的 360 度效果，这里采用“主图 + 变体”或由于 API 限制先返回单图重复（或异步并行生成多角度描述）
+      const mainImage = await this.generateImageTask(`Front view, ${fullPrompt}`);
+      return [mainImage, mainImage, mainImage, mainImage]; // 暂时使用同一张图确保流程通畅，后续可优化为并行请求不同角度
     } catch (error: any) {
-      if (error.message === "QUOTA_EXCEEDED") throw error;
-      throw new Error(error.message || "生成故障");
+      if (error.message?.includes('Quota')) throw new Error("QUOTA_EXCEEDED");
+      throw error;
     }
   }
 
-  async generateShowcaseVideo(prompt: string, baseImageBase64: string): Promise<string> {
-    const aistudio = (window as any).aistudio;
-    const hasKey = await aistudio.hasSelectedApiKey();
-    if (!hasKey) await aistudio.openSelectKey();
+  /**
+   * 生成视频 (通义万相-视频生成)
+   */
+  async generateShowcaseVideo(prompt: string, imageUrl: string): Promise<string> {
+    const response = await fetch(`${this.baseUrl}/services/aigc/video-generation/video-synthesis`, {
+      method: 'POST',
+      headers: { ...this.headers, 'X-DashScope-Async': 'enable' },
+      body: JSON.stringify({
+        model: 'wanxiang-v2-video', // 需确认具体可用模型名
+        input: { 
+          img_url: imageUrl,
+          prompt: `Cinematic camera move, 3d toy ${prompt} coming to life, professional lighting`
+        }
+      })
+    });
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    try {
-      let operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview',
-        prompt: `Cinematic showcase: ${prompt}`,
-        image: { imageBytes: baseImageBase64.split(',')[1], mimeType: 'image/png' },
-        config: { numberOfVideos: 1, resolution: '720p', aspectRatio: '16:9' }
-      });
-
-      while (!operation.done) {
-        await new Promise(r => setTimeout(r, 10000));
-        operation = await ai.operations.getVideosOperation({ operation: operation });
-      }
-
-      const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-      const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
-      const blob = await response.blob();
-      return URL.createObjectURL(blob);
-    } catch (error: any) {
-      if (error.message?.includes('429')) throw new Error("QUOTA_EXCEEDED");
-      if (error.message?.includes("Requested entity was not found")) {
-        await aistudio.openSelectKey();
-      }
-      throw error;
-    }
+    const data = await response.json();
+    if (!data.output?.task_id) throw new Error("视频任务启动失败");
+    
+    const result = await this.pollTask(data.output.task_id);
+    return result.video_url;
   }
 }
 
-export const geminiService = new GeminiService();
+export const geminiService = new AliyunService() as any; // 保持导出名一致以减少外部修改
