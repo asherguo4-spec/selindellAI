@@ -74,7 +74,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               <span className="text-[10px] font-mono text-purple-400 font-bold">{userProfile.id}</span>
             </div>
           ) : (
-            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">快去注册吧</div>
+            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">登录后开启私人馆藏</div>
           )}
           
           {userProfile.bio && (
@@ -91,13 +91,10 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
           <div className="mb-8">
             <button 
               onClick={() => setView(AppView.REGISTER)}
-              className="w-full py-6 rounded-[32px] purple-gradient shadow-xl shadow-purple-500/20 flex flex-col items-center justify-center space-y-2 active:scale-95 transition-transform"
+              className="w-full py-5 rounded-[28px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
             >
-              <div className="flex items-center space-x-2">
-                <Sparkles size={20} className="animate-pulse" />
-                <span className="text-lg font-black">新用户注册</span>
-              </div>
-              <p className="text-[10px] opacity-70 font-bold uppercase tracking-widest">设置密码 & 专属 ID</p>
+              <Sparkles size={20} className="animate-pulse" />
+              <span className="text-lg font-black">登录 / 新用户注册</span>
             </button>
           </div>
         )}
@@ -117,7 +114,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
                 <div className="flex flex-col">
                   <span className="font-medium">{item.label}</span>
                   {isGuest && item.label === '收货地址' && (
-                    <span className="text-[9px] text-gray-600 font-bold">快去注册吧</span>
+                    <span className="text-[9px] text-gray-600 font-bold">请先登录</span>
                   )}
                 </div>
               </div>
