@@ -2,12 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export class SelindellAIService {
-  private geminiClient: any;
   // 仅作为本地调试或未配置环境变量时的极端保底
   private readonly ZHIPU_STABLE_KEY = "08a05cfe50f44549947f6e1a5cb232fa.wqGlh7yjmT1WOR5S";
 
   constructor() {
-    this.geminiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Guidelines recommend creating instance right before use to ensure up-to-date configuration
   }
 
   private async createZhipuToken(): Promise<string> {
@@ -55,7 +54,10 @@ export class SelindellAIService {
 
   private async translateAndOptimize(prompt: string): Promise<string> {
     try {
-      const response = await this.geminiClient.models.generateContent({
+      // Correct initialization using the named parameter as per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // Direct call to ai.models.generateContent as per guidelines
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `你是一个专业的 3D 打印手办建模师。请将以下用户的灵感描述翻译成专业的英文 Stable Diffusion 提示词。
         必须静默加入以下硬性要求：
@@ -65,7 +67,8 @@ export class SelindellAIService {
         用户灵感: "${prompt}"
         只返回生成的英文描述，不要多余文字。`,
       });
-      return response.text.trim();
+      // Extract text safely from response.text property (getter)
+      return response.text?.trim() || prompt;
     } catch (e) {
       return prompt;
     }
@@ -96,28 +99,49 @@ export class SelindellAIService {
 
   async expandPrompt(prompt: string): Promise<string> {
     try {
-      const response = await this.geminiClient.models.generateContent({
+      // Initializing right before call to ensure the latest API key is used
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `你是一位顶级手办设计师。请将用户的灵感 “${prompt}” 扩写成一段富有想象力、画面感极强的简体中文描述。
-        要求：强调 3D 实物手办的精美细节与高端定制感，字数 80 字内。只返回简体中文。`,
+        要求：强调 3D 实物手办的精美细节与高端定制感，字数 30 字内。只返回简体中文。`,
       });
-      return response.text.trim() || prompt;
+      return response.text?.trim() || prompt;
     } catch (e) { return prompt; }
   }
 
   async generateLoreAndStats(prompt: string) {
     try {
-      const response = await this.geminiClient.models.generateContent({
+      // Consistent initialization pattern using 'ai' variable name
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `为基于“${prompt}”的造物起名并写50字故事，需包含数值。`,
-        config: { responseMimeType: "application/json", responseSchema: {
-          type: Type.OBJECT, properties: {
-            title: { type: Type.STRING }, lore: { type: Type.STRING },
-            stats: { type: Type.OBJECT, properties: { power: { type: Type.NUMBER }, agility: { type: Type.NUMBER }, soul: { type: Type.NUMBER }, rarity: { type: Type.STRING } } }
+        contents: `为基于“${prompt}”的造物起名并写30字故事，需包含数值。`,
+        config: { 
+          responseMimeType: "application/json", 
+          responseSchema: {
+            type: Type.OBJECT, 
+            properties: {
+              title: { type: Type.STRING }, 
+              lore: { type: Type.STRING },
+              stats: { 
+                type: Type.OBJECT, 
+                properties: { 
+                  power: { type: Type.NUMBER }, 
+                  agility: { type: Type.NUMBER }, 
+                  soul: { type: Type.NUMBER }, 
+                  rarity: { type: Type.STRING } 
+                },
+                propertyOrdering: ["power", "agility", "soul", "rarity"]
+              }
+            },
+            propertyOrdering: ["title", "lore", "stats"]
           }
-        }}
+        }
       });
-      return JSON.parse(response.text);
+      // Safely handling potential undefined from response.text
+      const text = response.text?.trim() || "{}";
+      return JSON.parse(text);
     } catch (e) {
       return { title: "未知造物", lore: "诞生于倾谷 AI 的精密计算中。", stats: { power: 80, agility: 80, soul: 80, rarity: "SSR" } };
     }

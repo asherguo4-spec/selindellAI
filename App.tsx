@@ -13,123 +13,99 @@ import Register from './views/Register.tsx';
 import { supabase } from './lib/supabase.ts';
 import { Loader2 } from 'lucide-react';
 
-// 增强版 UUID 生成器（适配非 HTTPS 环境）
-const generateUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
-
-const getInitialUserId = () => {
-  let id = localStorage.getItem('selindell_user_id');
-  if (!id) {
-    id = generateUUID();
-    localStorage.setItem('selindell_user_id', id);
-  }
-  return id;
-};
-
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
-  const [userId, setUserId] = useState<string>(getInitialUserId());
+  const [userId, setUserId] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [dbStatus, setDbStatus] = useState<'online' | 'offline'>('offline');
   const [myCreations, setMyCreations] = useState<GeneratedCreation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<GeneratedCreation | null>(null);
-  
-  const getDefaultProfile = (id: string): UserProfile => ({
-    id: id,
-    nickname: '访客造物主',
-    avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id}`,
+
+  const getDefaultProfile = (id: string | null): UserProfile => ({
+    id: id || '',
+    nickname: id ? '同步中...' : '访客造物主',
+    avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id || 'guest'}`,
     email: '',
-    bio: '即刻注册，同步你的造物灵感',
-    isRegistered: false
+    bio: id ? '正在加载您的造物灵魂...' : '即刻注册，同步你的造物灵感',
+    isRegistered: !!id
   });
 
-  const [userProfile, setUserProfile] = useState<UserProfile>(getDefaultProfile(userId));
+  const [userProfile, setUserProfile] = useState<UserProfile>(getDefaultProfile(null));
   const [addresses, setAddresses] = useState<Address[]>([]);
 
-  const initApp = async () => {
-    setIsLoadingProfile(true);
-    try {
-      const { data: profileData, error } = await supabase
+  // 1. 初始化 Auth 状态并监听
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleAuthChange(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuthChange = async (session: any) => {
+    if (session?.user) {
+      const uid = session.user.id;
+      setUserId(uid);
+      
+      // 关键改进：只要有 session，就立即更新 profile 基础状态，避免显示“访客”
+      setUserProfile(prev => ({
+        ...prev,
+        id: uid,
+        email: session.user.email || '',
+        isRegistered: true,
+        // 如果是新注册，先给个默认昵称
+        nickname: prev.nickname === '访客造物主' ? '造物主' : prev.nickname
+      }));
+
+      // 获取用户 Profile 详情
+      const { data: profileData } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('id', uid)
         .single();
-
-      if (!error) setDbStatus('online');
 
       if (profileData) {
         setUserProfile({
-          id: userId,
+          id: uid,
           nickname: profileData.nickname,
           bio: profileData.bio || '追求极致的造物美学',
           avatar: profileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.nickname}`,
-          email: 'creator@selindell.ai',
+          email: session.user.email || '',
           isRegistered: true
         });
-        
-        const { data: addrData } = await supabase
-          .from('addresses')
-          .select('*')
-          .eq('user_id', userId);
-        
-        if (addrData) setAddresses(addrData);
-      } else {
-        // 如果数据库没查到，重置为访客状态
-        setUserProfile(getDefaultProfile(userId));
-        setAddresses([]);
       }
-    } catch (err) {
-      setDbStatus('offline');
-    } finally {
-      setIsLoadingProfile(false);
-      // 只有在加载最初始数据时才强制跳到 HOME
-      if (currentView === AppView.HOME) setCurrentView(AppView.HOME);
+
+      // 获取用户地址
+      const { data: addrData } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', uid);
+      if (addrData) setAddresses(addrData);
+
+    } else {
+      setUserId(null);
+      setUserProfile(getDefaultProfile(null));
+      setAddresses([]);
     }
+    setIsLoadingProfile(false);
   };
 
-  useEffect(() => { initApp(); }, [userId]);
-
   const handleRegisterSuccess = (nickname: string) => {
-    setUserProfile(prev => ({ 
-      ...prev, 
-      nickname, 
-      isRegistered: true,
-      bio: '我是新进造物主',
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${nickname}` 
+    // 这里强制更新一下状态，确保 UI 反应最快
+    setUserProfile(prev => ({
+      ...prev,
+      nickname,
+      isRegistered: true
     }));
     setCurrentView(AppView.PROFILE);
   };
 
   const handleLogout = async () => {
-    setIsLoadingProfile(true);
-    try {
-      // 1. 尝试云端抹除（可选，根据隐私需求决定是否物理删除）
-      supabase.from('users').delete().eq('id', userId).then();
-      supabase.from('addresses').delete().eq('user_id', userId).then();
-      
-      // 2. 清理本地标识
-      localStorage.removeItem('selindell_user_id');
-      
-      // 3. 核心：生成新 ID 并重置内存状态，不刷新网页
-      const newId = generateUUID();
-      localStorage.setItem('selindell_user_id', newId);
-      
-      setUserId(newId); // 这会触发 useEffect(initApp)
-      setMyCreations([]);
-      setPendingOrder(null);
-      setCurrentView(AppView.HOME);
-    } catch (err) {
-      console.error("Logout error:", err);
-      // 如果内存重置失败，最后保底才使用强制刷新
-      window.location.reload();
-    }
+    await supabase.auth.signOut();
+    setCurrentView(AppView.HOME);
   };
 
   const handleCreationSuccess = (creation: GeneratedCreation) => {
@@ -145,6 +121,7 @@ const App: React.FC = () => {
   };
 
   const addAddress = async (newAddr: Omit<Address, 'id' | 'isDefault'>) => {
+    if (!userId) return;
     try {
       const { data, error } = await supabase.from('addresses').insert([{
         user_id: userId,
@@ -179,11 +156,8 @@ const App: React.FC = () => {
   if (isLoadingProfile) {
     return (
       <div className="max-w-md mx-auto min-h-screen bg-[#0a0514] flex flex-col items-center justify-center">
-        <div className="relative">
-          <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
-          <div className="absolute inset-0 blur-xl bg-purple-500/20 animate-pulse rounded-full"></div>
-        </div>
-        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase animate-pulse">Initializing Digital Soul</p>
+        <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
+        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Syncing Soul Data...</p>
       </div>
     );
   }
@@ -191,7 +165,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case AppView.REGISTER:
-        return <Register userId={userId} onRegisterSuccess={handleRegisterSuccess} />;
+        return <Register onRegisterSuccess={handleRegisterSuccess} />;
       case AppView.HOME:
       case AppView.GENERATING:
       case AppView.RESULT:
@@ -204,7 +178,7 @@ const App: React.FC = () => {
           />
         );
       case AppView.CHECKOUT:
-        return pendingOrder ? (
+        return pendingOrder && userId ? (
           <Checkout 
             userId={userId}
             creation={pendingOrder} 
@@ -214,7 +188,7 @@ const App: React.FC = () => {
           />
         ) : null;
       case AppView.ORDERS:
-        return <Orders userId={userId} creations={myCreations} />;
+        return userId ? <Orders userId={userId} creations={myCreations} /> : <Register onRegisterSuccess={handleRegisterSuccess} />;
       case AppView.PROFILE:
         return (
           <Profile 
@@ -233,16 +207,16 @@ const App: React.FC = () => {
           />
         );
       case AppView.CUSTOMER_SERVICE:
-        return <CustomerService userId={userId} onBack={() => setCurrentView(AppView.PROFILE)} />;
+        return userId ? <CustomerService userId={userId} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
       case AppView.SETTINGS:
-        return (
+        return userId ? (
           <SettingsView 
             userId={userId}
             profile={userProfile} 
             onUpdate={handleProfileUpdate} 
             onBack={() => setCurrentView(AppView.PROFILE)} 
           />
-        );
+        ) : null;
       default:
         return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
     }
@@ -259,10 +233,6 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-transparent shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
-      <div className="h-1 w-full fixed top-0 left-1/2 -translate-x-1/2 max-w-md z-[100] flex">
-        <div className={`h-full flex-1 transition-colors duration-1000 ${dbStatus === 'online' ? 'bg-green-500/20' : 'bg-red-500/20'}`}></div>
-      </div>
-
       {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
         <header className="h-20 px-6 flex items-end pb-4 justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
           <div className="flex items-center space-x-2.5">
@@ -270,8 +240,8 @@ const App: React.FC = () => {
              <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
           </div>
           <button 
-            onClick={() => setCurrentView(AppView.PROFILE)}
-            className="w-10 h-10 rounded-full border border-white/10 active:scale-90 transition-all overflow-hidden shadow-lg"
+            onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
+            className="w-10 h-10 rounded-full border border-white/10 overflow-hidden"
           >
             <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
           </button>

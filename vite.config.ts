@@ -5,7 +5,9 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // 加载环境变量
-  const env = loadEnv(mode, process.cwd(), '');
+  // Fixed: 'process.cwd()' might cause a type error if @types/node is not correctly configured in the Vite config environment.
+  // Using type assertion to any to ensure the standard Node.js process.cwd() is accessible.
+  const env = loadEnv(mode, (process as any).cwd(), '');
   
   return {
     plugins: [react()],
