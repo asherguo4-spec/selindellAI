@@ -32,7 +32,6 @@ const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(getDefaultProfile(null));
   const [addresses, setAddresses] = useState<Address[]>([]);
 
-  // 1. 初始化 Auth 状态并监听
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleAuthChange(session);
@@ -50,17 +49,14 @@ const App: React.FC = () => {
       const uid = session.user.id;
       setUserId(uid);
       
-      // 关键改进：只要有 session，就立即更新 profile 基础状态，避免显示“访客”
       setUserProfile(prev => ({
         ...prev,
         id: uid,
         email: session.user.email || '',
         isRegistered: true,
-        // 如果是新注册，先给个默认昵称
         nickname: prev.nickname === '访客造物主' ? '造物主' : prev.nickname
       }));
 
-      // 获取用户 Profile 详情
       const { data: profileData } = await supabase
         .from('users')
         .select('*')
@@ -78,11 +74,7 @@ const App: React.FC = () => {
         });
       }
 
-      // 获取用户地址
-      const { data: addrData } = await supabase
-        .from('addresses')
-        .select('*')
-        .eq('user_id', uid);
+      const { data: addrData } = await supabase.from('addresses').select('*').eq('user_id', uid);
       if (addrData) setAddresses(addrData);
 
     } else {
@@ -94,12 +86,7 @@ const App: React.FC = () => {
   };
 
   const handleRegisterSuccess = (nickname: string) => {
-    // 这里强制更新一下状态，确保 UI 反应最快
-    setUserProfile(prev => ({
-      ...prev,
-      nickname,
-      isRegistered: true
-    }));
+    setUserProfile(prev => ({ ...prev, nickname, isRegistered: true }));
     setCurrentView(AppView.PROFILE);
   };
 
@@ -130,12 +117,9 @@ const App: React.FC = () => {
         location: newAddr.location,
         is_default: addresses.length === 0
       }]).select().single();
-
       if (error) throw error;
       if (data) setAddresses(prev => [...prev, data]);
-    } catch (err: any) {
-      alert(`保存失败: ${err.message}`);
-    }
+    } catch (err: any) { alert(`保存失败: ${err.message}`); }
   };
 
   const deleteAddress = async (id: string) => {
@@ -143,9 +127,7 @@ const App: React.FC = () => {
       const { error } = await supabase.from('addresses').delete().eq('id', id);
       if (error) throw error;
       setAddresses(prev => prev.filter(a => a.id !== id));
-    } catch (err: any) {
-      alert(`删除失败: ${err.message}`);
-    }
+    } catch (err: any) { alert(`删除失败: ${err.message}`); }
   };
 
   const handleProfileUpdate = (updates: Partial<UserProfile>) => {
@@ -164,61 +146,25 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case AppView.REGISTER:
-        return <Register onRegisterSuccess={handleRegisterSuccess} />;
+      case AppView.REGISTER: return <Register onRegisterSuccess={handleRegisterSuccess} />;
       case AppView.HOME:
       case AppView.GENERATING:
       case AppView.RESULT:
-        return (
-          <Home 
-            currentView={currentView} 
-            setView={setCurrentView} 
-            onCreationSuccess={handleCreationSuccess}
-            setPendingOrder={setPendingOrder}
-          />
-        );
+        return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
       case AppView.CHECKOUT:
-        return pendingOrder && userId ? (
-          <Checkout 
-            userId={userId}
-            creation={pendingOrder} 
-            addresses={addresses} 
-            onPaymentComplete={handlePaymentComplete}
-            onBack={() => setCurrentView(AppView.RESULT)}
-          />
-        ) : null;
+        return pendingOrder && userId ? <Checkout userId={userId} creation={pendingOrder} addresses={addresses} onPaymentComplete={handlePaymentComplete} onBack={() => setCurrentView(AppView.RESULT)} /> : null;
       case AppView.ORDERS:
-        return userId ? <Orders userId={userId} creations={myCreations} /> : <Register onRegisterSuccess={handleRegisterSuccess} />;
+        // 修正：不再强制跳转 Register，允许 Guest 模式查看本地作品
+        return <Orders userId={userId || ''} creations={myCreations} />;
       case AppView.PROFILE:
-        return (
-          <Profile 
-            setView={setCurrentView} 
-            userProfile={userProfile} 
-            onLogout={handleLogout} 
-          />
-        );
+        return <Profile setView={setCurrentView} userProfile={userProfile} onLogout={handleLogout} />;
       case AppView.ADDRESS_LIST:
-        return (
-          <AddressList 
-            addresses={addresses} 
-            onAddAddress={addAddress} 
-            onDeleteAddress={deleteAddress}
-            onBack={() => setCurrentView(AppView.PROFILE)} 
-          />
-        );
+        return <AddressList addresses={addresses} onAddAddress={addAddress} onDeleteAddress={deleteAddress} onBack={() => setCurrentView(AppView.PROFILE)} />;
       case AppView.CUSTOMER_SERVICE:
         return userId ? <CustomerService userId={userId} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
       case AppView.SETTINGS:
-        return userId ? (
-          <SettingsView 
-            userId={userId}
-            profile={userProfile} 
-            onUpdate={handleProfileUpdate} 
-            onBack={() => setCurrentView(AppView.PROFILE)} 
-          />
-        ) : null;
-      default:
-        return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
+        return userId ? <SettingsView userId={userId} profile={userProfile} onUpdate={handleProfileUpdate} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
+      default: return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
     }
   };
 
