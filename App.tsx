@@ -21,8 +21,15 @@ const App: React.FC = () => {
   const [pendingOrder, setPendingOrder] = useState<GeneratedCreation | null>(null);
   const [orderCount, setOrderCount] = useState(0);
 
+  // 这里的 ID 生成逻辑是固定的，所以同一个长 ID 永远会对应同一个短 ID
+  const generateShortId = (id: string) => {
+    if (!id) return 'GUEST-0000';
+    return `SLD-${id.substring(0, 4).toUpperCase()}`;
+  };
+
   const getDefaultProfile = (id: string | null): UserProfile => ({
     id: id || '',
+    shortId: generateShortId(id || ''),
     nickname: id ? '同步中...' : '访客造物主',
     avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id || 'guest'}`,
     email: '',
@@ -52,7 +59,6 @@ const App: React.FC = () => {
       const uid = session.user.id;
       setUserId(uid);
       
-      // 先加载订单数来决定等级
       const { count } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
@@ -72,6 +78,7 @@ const App: React.FC = () => {
       if (profileData) {
         setUserProfile({
           id: uid,
+          shortId: generateShortId(uid),
           nickname: profileData.nickname,
           bio: profileData.bio || '追求极致的造物美学',
           avatar: profileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.nickname}`,
@@ -81,6 +88,7 @@ const App: React.FC = () => {
           orderCount: currentOrderCount
         });
       } else {
+        // 如果数据库没数据，但有 Session（说明清空过数据库），保持默认状态引导重塑
         setUserProfile({
           ...getDefaultProfile(uid),
           level: level,
@@ -89,7 +97,16 @@ const App: React.FC = () => {
       }
 
       const { data: addrData } = await supabase.from('addresses').select('*').eq('user_id', uid);
-      if (addrData) setAddresses(addrData);
+      if (addrData) {
+        setAddresses(addrData.map(a => ({
+          id: a.id,
+          userId: a.user_id,
+          name: a.name,
+          phone: a.phone,
+          location: a.location,
+          isDefault: a.is_default
+        })));
+      }
 
     } else {
       setUserId(null);
@@ -101,13 +118,14 @@ const App: React.FC = () => {
   };
 
   const handleRegisterSuccess = (nickname: string) => {
-    setUserProfile(prev => ({ ...prev, nickname, isRegistered: true, level: 'creator' }));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
+    });
     setCurrentView(AppView.PROFILE);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // 退出后保留在个人中心视图，UI 会通过 handleAuthChange 自动切回访客态
     setCurrentView(AppView.PROFILE);
   };
 
@@ -125,7 +143,7 @@ const App: React.FC = () => {
     setCurrentView(AppView.ORDERS);
   };
 
-  const addAddress = async (newAddr: Omit<Address, 'id' | 'isDefault'>) => {
+  const addAddress = async (newAddr: Omit<Address, 'id' | 'isDefault' | 'userId'>) => {
     if (!userId) return;
     try {
       const { data, error } = await supabase.from('addresses').insert([{
@@ -136,7 +154,16 @@ const App: React.FC = () => {
         is_default: addresses.length === 0
       }]).select().single();
       if (error) throw error;
-      if (data) setAddresses(prev => [...prev, data]);
+      if (data) {
+        setAddresses(prev => [...prev, {
+          id: data.id,
+          userId: data.user_id,
+          name: data.name,
+          phone: data.phone,
+          location: data.location,
+          isDefault: data.is_default
+        }]);
+      }
     } catch (err: any) { alert(`保存失败: ${err.message}`); }
   };
 
@@ -156,8 +183,8 @@ const App: React.FC = () => {
   if (isLoadingProfile) {
     return (
       <div className="max-w-md mx-auto h-[100dvh] bg-[#0a0514] flex flex-col items-center justify-center overflow-hidden">
-        <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
-        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Syncing Soul Data...</p>
+        <div className="loader-dot mb-8"></div>
+        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Soul Link Synchronizing...</p>
       </div>
     );
   }

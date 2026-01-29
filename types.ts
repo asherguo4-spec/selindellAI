@@ -49,6 +49,7 @@ export type UserLevel = 'visitor' | 'creator' | 'elite';
 export interface UserProfile {
   nickname: string;
   id: string;
+  shortId: string; // 仅用于 UI 展示
   avatar: string;
   email: string;
   bio?: string;
@@ -59,6 +60,7 @@ export interface UserProfile {
 
 export interface Address {
   id: string;
+  userId: string; 
   name: string;
   phone: string;
   location: string;

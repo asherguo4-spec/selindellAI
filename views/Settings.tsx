@@ -47,7 +47,6 @@ const SettingsView: React.FC<SettingsProps> = ({ userId, profile, onUpdate, onBa
     setFieldError(null);
     setSaveSuccess(false);
 
-    // 数据校验
     if (formData.nickname.trim().length < 2) {
       setFieldError({ field: 'nickname', msg: '昵称至少需要 2 个字符' });
       return;
@@ -68,6 +67,7 @@ const SettingsView: React.FC<SettingsProps> = ({ userId, profile, onUpdate, onBa
     
     setIsSaving(true);
     try {
+      // 移除不存在的 short_id 列
       const { error } = await supabase.from('users').upsert({ 
         id: userId, 
         nickname: formData.nickname.trim(),

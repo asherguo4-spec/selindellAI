@@ -28,66 +28,92 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
     setSuccessMsg(null);
     
     try {
+      let finalUserId: string | null = null;
+      let finalNickname = nickname.trim();
+
       if (isLoginMode) {
-        // 登录逻辑
+        // --- 登录模式 ---
         const { data, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password.trim(),
         });
         if (error) throw error;
+        finalUserId = data.user.id;
         
-        // 登录成功后尝试获取昵称
         const { data: profile } = await supabase
           .from('users')
           .select('nickname')
-          .eq('id', data.user.id)
+          .eq('id', finalUserId)
           .single();
-          
+        
+        finalNickname = profile?.nickname || '造物主';
         setSuccessMsg("验证成功，欢迎归来");
-        setTimeout(() => {
-          onRegisterSuccess(profile?.nickname || '造物主');
-        }, 1500);
       } else {
-        // 注册逻辑
-        if (!nickname.trim()) {
+        // --- 注册模式 ---
+        if (!finalNickname) {
           setErrorHint("造物主需要一个响亮的昵称");
           setIsSubmitting(false);
           return;
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password: password.trim(),
         });
-        if (error) throw error;
-
-        if (data.user) {
-          // 在 public.users 表中创建对应档案
-          const { error: profileError } = await supabase.from('users').upsert({
-            id: data.user.id,
-            nickname: nickname.trim(),
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${nickname.trim()}`
-          });
-          if (profileError) throw profileError;
+        
+        // 关键逻辑：如果账号在 Auth 系统已存在，说明你只删了表没删账号
+        if (signUpError) {
+          console.warn("SignUp Error, attempting auto-recovery:", signUpError.message);
           
+          // 无论错误信息是什么，只要注册不通过，我们就尝试用这套账号密码登录
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password.trim(),
+          });
+          
+          if (loginError) {
+            // 如果登录也失败，说明可能是密码错了或者真正的注册异常
+            if (signUpError.message.includes("already registered")) {
+              throw new Error("此账号已存在但密码不符，请尝试找回密码或更换邮箱。");
+            }
+            throw signUpError;
+          }
+          
+          // 登录成功，说明账号在，但数据库表里没数据（因为你清空了）
+          finalUserId = loginData.user.id;
+          setSuccessMsg("检测到已有通行证，正在重塑灵魂档案...");
+        } else {
+          finalUserId = data.user?.id || null;
           setSuccessMsg("注册成功，开启造物之旅");
-          setTimeout(() => {
-            onRegisterSuccess(nickname.trim());
-          }, 1500);
         }
       }
+
+      // --- 统合：重建或更新数据库档案 ---
+      if (finalUserId) {
+        // 使用 upsert 确保 public.users 表里一定有这行数据
+        await supabase.from('users').upsert({
+          id: finalUserId,
+          nickname: finalNickname,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${finalNickname}`,
+          bio: '追求极致的造物美学'
+        });
+      }
+      
+      setTimeout(() => {
+        onRegisterSuccess(finalNickname);
+      }, 1500);
+
     } catch (err: any) {
-      setErrorHint(err.message === "Invalid login credentials" ? "账号或密码错误，请核对后重试" : `认证异常: ${err.message}`);
+      setErrorHint(err.message);
       setIsSubmitting(false);
     }
   };
 
-  // 成功状态视图
   if (successMsg) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500 bg-black">
-        <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
-          <CheckCircle2 className="text-green-500" size={48} />
+        <div className="w-24 h-24 bg-purple-500/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+          <CheckCircle2 className="text-purple-500" size={48} />
         </div>
         <h2 className="text-3xl font-black text-white mb-2">{successMsg}</h2>
         <p className="text-gray-500 text-[10px] font-black tracking-[0.4em] uppercase">Syncing Soul Data...</p>
@@ -97,7 +123,6 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500 relative bg-[#0a0514]">
-      {/* 返回按钮 */}
       <div className="absolute top-8 left-6">
         <button 
           onClick={onBack} 

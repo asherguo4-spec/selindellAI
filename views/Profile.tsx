@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, Quote, AlertTriangle, Sparkles, UserPlus, Info, Crown, Gem, BadgeCheck } from 'lucide-react';
+import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, AlertTriangle, Sparkles, UserPlus, Info, Crown, Gem, BadgeCheck, Hash, Copy } from 'lucide-react';
 import { AppView, UserProfile } from '../types.ts';
 
 interface ProfileProps {
@@ -72,11 +72,21 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
             )}
           </div>
           
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <h1 className={`text-2xl font-black tracking-tight ${isGuest ? 'text-gray-400' : 'text-white'}`}>
-              {userProfile.nickname}
-            </h1>
-            {isElite && <Gem size={16} className="text-purple-400 animate-pulse" />}
+          <div className="flex flex-col items-center mb-4">
+            <div className="flex items-center justify-center space-x-2 mb-1">
+              <h1 className={`text-2xl font-black tracking-tight ${isGuest ? 'text-gray-400' : 'text-white'}`}>
+                {userProfile.nickname}
+              </h1>
+              {isElite && <Gem size={16} className="text-purple-400 animate-pulse" />}
+            </div>
+            
+            {/* 这里的 Short ID 展示要非常醒目，让用户产生“这就是我的 ID”的错觉 */}
+            <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/5">
+              <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
+                ID: {userProfile.shortId}
+              </span>
+              <Copy size={8} className="text-gray-700" />
+            </div>
           </div>
           
           <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-white/10 mb-5 ${levelInfo.bg}`}>
@@ -88,14 +98,12 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
           
           {userProfile.bio && (
             <div className="relative max-w-[280px]">
-              <Quote size={10} className="absolute -top-1 -left-4 text-purple-500/40 rotate-180" />
               <p className="text-xs text-gray-400 italic leading-relaxed">{userProfile.bio}</p>
-              <Quote size={10} className="absolute -bottom-1 -right-4 text-purple-500/40" />
             </div>
           )}
         </div>
 
-        {/* Level Progress for Elite Potential */}
+        {/* Level Progress */}
         {!isGuest && !isElite && (
           <div className="mb-6 p-4 glass-card rounded-[24px] border-blue-400/10">
             <div className="flex justify-between items-center mb-2">
@@ -109,7 +117,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
           </div>
         )}
 
-        {/* Registration CTA for Guests */}
+        {/* Registration CTA */}
         {isGuest && (
           <div className="mb-6">
             <button 
@@ -117,7 +125,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               className="w-full py-4 rounded-[24px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
             >
               <Sparkles size={18} className="animate-pulse" />
-              <span className="text-base font-black text-white">登录 / 新用户注册</span>
+              <span className="text-base font-black text-white">登录 / 重塑灵魂</span>
             </button>
           </div>
         )}
@@ -137,7 +145,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">{item.label}</span>
                   {isGuest && item.label === '收货地址' && (
-                    <span className="text-[8px] text-gray-600 font-bold uppercase tracking-tighter">请先登录</span>
+                    <span className="text-[8px] text-gray-600 font-bold uppercase tracking-tighter">请先同步灵魂</span>
                   )}
                 </div>
               </div>
@@ -146,22 +154,21 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
           ))}
         </div>
 
-        {/* Logout (Only for Registered Users) */}
+        {/* Logout */}
         {!isGuest && (
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full py-4 rounded-[20px] border border-red-500/30 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
+            className="w-full py-4 rounded-[24px] border border-red-500/30 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
           >
             <LogOut size={18} />
             <span>退出登录</span>
           </button>
         )}
 
-        {/* Build Version Indicator */}
         <div className="flex items-center justify-center space-x-2 mt-4 opacity-20">
           <Info size={8} className="text-gray-500" />
           <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
-            Build: 2026.01.28-v5.elite_tier
+            Build: 2026.01.28-v5.recovery_ready
           </span>
         </div>
       </div>
@@ -174,7 +181,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               <AlertTriangle className="text-red-500" size={32} />
             </div>
             <h3 className="text-xl font-bold mb-2 text-white">确认退出吗</h3>
-            <p className="text-gray-500 text-xs mb-8">退出登录后，本地馆藏将无法跨端同步。</p>
+            <p className="text-gray-500 text-xs mb-8">退出后，您的私人灵感馆藏将暂停同步。</p>
             <div className="space-y-4">
               <button 
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
