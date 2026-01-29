@@ -2,35 +2,20 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export class SelindellAIService {
-  // 仅作为本地调试或未配置环境变量时的极端保底
+  // 智谱保底 Key (仅当环境变量完全缺失时使用)
   private readonly ZHIPU_STABLE_KEY = "08a05cfe50f44549947f6e1a5cb232fa.wqGlh7yjmT1WOR5S";
 
-  constructor() {
-    // Guidelines recommend creating instance right before use to ensure up-to-date configuration
-  }
+  constructor() {}
 
   private async createZhipuToken(): Promise<string> {
-    // 1. 优先尝试获取专用的 ZHIPU_API_KEY
-    const zhipuEnvKey = (process.env.ZHIPU_API_KEY || '').trim();
-    // 2. 获取通用的 API_KEY (可能是 Gemini 也可能是智谱)
-    const generalEnvKey = (process.env.API_KEY || '').trim();
-    
-    let targetKey = zhipuEnvKey;
-
-    // 如果没有专门的 ZHIPU_API_KEY，检查通用的 API_KEY 是否符合智谱的格式（包含点且不是以 AIza 开头）
-    if (!targetKey) {
-      if (generalEnvKey.includes('.') && !generalEnvKey.startsWith('AIza')) {
-        targetKey = generalEnvKey;
-      } else {
-        targetKey = this.ZHIPU_STABLE_KEY;
-      }
+    const targetKey = (process.env.ZHIPU_API_KEY || this.ZHIPU_STABLE_KEY).trim();
+    if (!targetKey.includes('.')) {
+      throw new Error("智谱 API KEY 格式错误，请检查 .env 中的 ZHIPU_API_KEY");
     }
 
     const parts = targetKey.split('.');
-    if (parts.length < 2) throw new Error("无效的智谱 API KEY 格式");
-
-    const id = parts[parts.length - 2];
-    const secret = parts[parts.length - 1];
+    const id = parts[0];
+    const secret = parts[1];
     
     const header = { alg: "HS256", sign_type: "SIGN" };
     const payload = { 
@@ -52,71 +37,99 @@ export class SelindellAIService {
     return `${unsignedToken}.${signatureBase64}`;
   }
 
-  private async translateAndOptimize(prompt: string): Promise<string> {
+  /**
+   * 灵感增强：仅在点击按钮时触发
+   * 要求：30字内，核心词位置灵活（句首/句中/句末）
+   */
+  async expandPrompt(prompt: string): Promise<string> {
+    if (!process.env.API_KEY || process.env.API_KEY.includes('.')) {
+      throw new Error("未检测到有效的 Gemini 密钥 (API_KEY)。");
+    }
+
     try {
-      // Correct initialization using the named parameter as per guidelines
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      // Direct call to ai.models.generateContent as per guidelines
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `你是一个专业的 3D 打印手办建模师。请将以下用户的灵感描述翻译成专业的英文 Stable Diffusion 提示词。
-        必须静默加入以下硬性要求：
-        1. 必须在手办的胸口或腹部显著位置包含 "SELINDELL" 文本标识。
-        2. 必须符合 3D 打印物理特性（重心稳固、实体结构、无悬空零件）。
-        3. 材质描述为：工业级高精度树脂、手工打磨哑光涂装、顶级收藏质感。
-        用户灵感: "${prompt}"
-        只返回生成的英文描述，不要多余文字。`,
+        contents: `你是一位世界顶级的手办概念设计师。请将用户的原始灵感 “${prompt}” 扩写成一段充满想象力和细节的手办描述。
+        要求：
+        1. 必须保留用户原始输入的主体。
+        2. 核心词可以自然地出现在句子的开头、中间或末尾，不要死板。
+        3. 字数严格限制在 30 字以内。
+        4. 语言要富有画面感（如动态、神态、光影感）。
+        5. 只返回扩写后的简体中文文本。`,
       });
-      // Extract text safely from response.text property (getter)
       return response.text?.trim() || prompt;
-    } catch (e) {
-      return prompt;
+    } catch (e: any) {
+      console.error("Expand Error:", e);
+      throw new Error("灵感增强失败，请检查网络连接。");
     }
   }
 
+  /**
+   * 生图逻辑：完全使用智谱，紧扣输入框内容
+   * 强化：白色背景、材质风格严格应用、物理手办质感
+   */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    const baseDescription = await this.translateAndOptimize(prompt);
-    const token = await this.createZhipuToken();
+    let translatedPrompt = prompt;
+    
+    // 内部静默翻译：确保智谱能更好地理解描述的主体，并转化为高质量提示词
+    try {
+      if (process.env.API_KEY && !process.env.API_KEY.includes('.')) {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: `Translate the following action figure description into a high-quality, professional English image prompt. 
+          Text: "${prompt}"
+          Focus on capturing the core subject and physical 3D attributes.`,
+        });
+        translatedPrompt = response.text?.trim() || prompt;
+      }
+    } catch (e) {
+      // 翻译失败降级使用原句
+    }
 
-    const fullPrompt = `${baseDescription}, ${styleSuffix}, front centered full body shot, clean plain white background, professional 3D octane render, 8k resolution, cinematic studio lighting, masterpiece.`;
+    const token = await this.createZhipuToken();
+    
+    /**
+     * 核心生图指令构造：
+     * 1. 权重最高的纯白背景 (Pure white background)
+     * 2. 紧扣用户输入主体 (translatedPrompt)
+     * 3. 严格遵循用户选择的材质风格 (styleSuffix)
+     * 4. 强制 3D 打印物理手办质感 (Physical action figure, realistic textures, 3D printable model)
+     */
+    const finalPrompt = `(Pure white background:1.8), realistic physical action figure of ${translatedPrompt}, ${styleSuffix}, 3D printable model, studio lighting, high quality resin material, octane render, sharp details, centered composition, high-end toy photography, 8k resolution.`;
 
     try {
       const response = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'cogview-3-plus', prompt: fullPrompt, size: "1024x1024" })
+        headers: { 
+          'Authorization': `Bearer ${token}`, 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          model: 'cogview-3-plus', 
+          prompt: finalPrompt, 
+          size: "1024x1024" 
+        })
       });
 
       const result = await response.json();
       if (result.error) throw new Error(result.error.message);
+      if (!result.data || !result.data[0]?.url) throw new Error("绘图服务未返回有效图片。");
       
-      const imageUrl = result.data[0].url;
-      return [imageUrl]; 
+      return [result.data[0].url]; 
     } catch (error: any) {
-      throw new Error(error.message || "倾谷引擎铸造失败");
+      throw new Error(error.message || "绘图引擎响应异常，请重试。");
     }
-  }
-
-  async expandPrompt(prompt: string): Promise<string> {
-    try {
-      // Initializing right before call to ensure the latest API key is used
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `你是一位顶级手办设计师。请将用户的灵感 “${prompt}” 扩写成一段富有想象力、画面感极强的简体中文描述。
-        要求：强调 3D 实物手办的精美细节与高端定制感，字数 30 字内。只返回简体中文。`,
-      });
-      return response.text?.trim() || prompt;
-    } catch (e) { return prompt; }
   }
 
   async generateLoreAndStats(prompt: string) {
     try {
-      // Consistent initialization pattern using 'ai' variable name
+      if (!process.env.API_KEY || process.env.API_KEY.includes('.')) throw new Error("Skip");
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `为基于“${prompt}”的造物起名并写30字故事，需包含数值。`,
+        contents: `根据描述 “${prompt}”，为这个手办起一个名字并写一个30字内的背景故事，包含战斗属性。`,
         config: { 
           responseMimeType: "application/json", 
           responseSchema: {
@@ -126,24 +139,15 @@ export class SelindellAIService {
               lore: { type: Type.STRING },
               stats: { 
                 type: Type.OBJECT, 
-                properties: { 
-                  power: { type: Type.NUMBER }, 
-                  agility: { type: Type.NUMBER }, 
-                  soul: { type: Type.NUMBER }, 
-                  rarity: { type: Type.STRING } 
-                },
-                propertyOrdering: ["power", "agility", "soul", "rarity"]
+                properties: { power: { type: Type.NUMBER }, agility: { type: Type.NUMBER }, soul: { type: Type.NUMBER }, rarity: { type: Type.STRING } }
               }
-            },
-            propertyOrdering: ["title", "lore", "stats"]
+            }
           }
         }
       });
-      // Safely handling potential undefined from response.text
-      const text = response.text?.trim() || "{}";
-      return JSON.parse(text);
+      return JSON.parse(response.text?.trim() || "{}");
     } catch (e) {
-      return { title: "未知造物", lore: "诞生于倾谷 AI 的精密计算中。", stats: { power: 80, agility: 80, soul: 80, rarity: "SSR" } };
+      return { title: "未知造物", lore: "诞生于倾谷 AI 的精密计算中。", stats: { power: 90, agility: 90, soul: 90, rarity: "SSR" } };
     }
   }
 }

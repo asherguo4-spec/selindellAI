@@ -44,6 +44,8 @@ export interface GeneratedCreation {
   status: CreationStatus;
 }
 
+export type UserLevel = 'visitor' | 'creator' | 'elite';
+
 export interface UserProfile {
   nickname: string;
   id: string;
@@ -51,6 +53,8 @@ export interface UserProfile {
   email: string;
   bio?: string;
   isRegistered?: boolean;
+  level: UserLevel;
+  orderCount: number;
 }
 
 export interface Address {

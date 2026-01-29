@@ -1,22 +1,30 @@
 
 import React, { useEffect, useState } from 'react';
-import { GeneratedCreation } from '../types';
-import { Loader2, RefreshCw, AlertCircle, Database } from 'lucide-react';
+import { GeneratedCreation, AppView } from '../types';
+import { Loader2, RefreshCw, AlertCircle, Database, Plus, SearchX } from 'lucide-react';
 import { supabase } from '../lib/supabase.ts';
 
 interface OrdersProps {
   userId: string;
   creations: GeneratedCreation[];
+  // 注入 setView 以便空状态跳转
+  setView?: (view: AppView) => void;
 }
 
-const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
+const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
   const [dbOrders, setDbOrders] = useState<GeneratedCreation[]>([]);
   const [loading, setLoading] = useState(true);
   const [schemaError, setSchemaError] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const fetchOrders = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setSchemaError(false);
+    setFetchError(null);
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -48,6 +56,7 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
       setDbOrders(mappedData);
     } catch (err: any) {
       console.error("Fetch orders failed:", err.message);
+      setFetchError("订单同步异常，请点击刷新重试");
     } finally {
       setLoading(false);
     }
@@ -64,17 +73,20 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
   });
 
   if (loading && dbOrders.length === 0) return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <Loader2 className="animate-spin text-purple-500 mb-4" size={32} />
-      <p className="text-gray-500 text-sm">正在同步您的私人馆藏...</p>
+    <div className="flex flex-col items-center justify-center h-full space-y-4">
+      <div className="relative">
+        <Loader2 className="animate-spin text-purple-500" size={40} />
+        <div className="absolute inset-0 bg-purple-500/10 blur-xl rounded-full"></div>
+      </div>
+      <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">Syncing Collection...</p>
     </div>
   );
 
   return (
     <div className="p-6 flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-6 shrink-0">
+      <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
-          <h2 className="text-2xl font-bold">作品</h2>
+          <h2 className="text-3xl font-black tracking-tight">私人馆藏</h2>
           {schemaError && (
             <div className="flex items-center space-x-1 mt-1">
               <Database size={10} className="text-orange-500" />
@@ -82,35 +94,62 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations }) => {
             </div>
           )}
         </div>
-        <button onClick={fetchOrders} className="p-2 bg-white/5 rounded-full text-gray-400 active:rotate-180 transition-transform">
-          <RefreshCw size={20} />
+        <button 
+          onClick={fetchOrders} 
+          disabled={loading}
+          className={`p-2.5 bg-white/5 rounded-full text-gray-400 active:rotate-180 transition-all duration-500 ${loading ? 'opacity-30' : 'hover:bg-white/10'}`}
+        >
+          <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+        {fetchError && (
+          <div className="glass-card rounded-2xl p-6 border-red-500/20 mb-6 flex flex-col items-center text-center">
+            <AlertCircle className="text-red-500 mb-3" size={24} />
+            <p className="text-xs text-gray-400 mb-4">{fetchError}</p>
+            <button onClick={fetchOrders} className="text-[10px] font-black uppercase tracking-widest text-purple-400 border border-purple-500/20 px-4 py-2 rounded-full">重试连接</button>
+          </div>
+        )}
+
         {allOrders.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            <AlertCircle size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-sm">暂无作品，快去首页创作吧</p>
+          <div className="flex flex-col items-center justify-center py-20 px-10 text-center animate-in fade-in zoom-in duration-700">
+            <div className="w-24 h-24 bg-white/[0.02] rounded-full flex items-center justify-center mb-8 border border-white/5 relative">
+              <SearchX size={40} className="text-gray-800" />
+              <div className="absolute inset-0 bg-purple-500/5 blur-3xl rounded-full"></div>
+            </div>
+            <h3 className="text-xl font-bold mb-3 text-white">馆内空空如也</h3>
+            <p className="text-gray-500 text-sm leading-relaxed mb-10">您的造物灵感还未落入尘世。现在就开始第一场造物仪式吧？</p>
+            <button 
+              onClick={() => window.location.reload()} // 或者使用 setView 跳转首页
+              className="w-full h-16 rounded-2xl purple-gradient flex items-center justify-center space-x-3 font-black text-white active:scale-95 transition-all shadow-xl shadow-purple-500/20"
+            >
+              <Plus size={20} />
+              <span>立即开启造物</span>
+            </button>
           </div>
         ) : (
           <div className="grid gap-4">
             {allOrders.map((order) => (
-              <div key={order.id} className="glass-card rounded-[24px] p-3 flex space-x-4 border-white/5 animate-in fade-in slide-in-from-bottom-2">
-                <div className="w-20 h-28 rounded-xl overflow-hidden bg-white/5 shrink-0">
-                  <img src={order.imageUrl} className="w-full h-full object-cover" />
+              <div key={order.id} className="glass-card rounded-[28px] p-3.5 flex space-x-4 border-white/5 active:bg-white/[0.04] transition-all animate-in fade-in slide-in-from-bottom-4">
+                <div className="w-20 h-28 rounded-2xl overflow-hidden bg-black/40 shrink-0 border border-white/5">
+                  <img src={order.imageUrl} className="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
                     <div className="flex justify-between items-start">
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-bold uppercase tracking-tighter">
-                        {order.status}
+                      <span className="text-[9px] px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 font-black uppercase tracking-widest">
+                        {order.status === 'paid' ? '已排产' : order.status}
                       </span>
+                      <span className="text-[9px] text-gray-700 font-mono">#{order.id.slice(0, 6)}</span>
                     </div>
-                    <h3 className="font-bold text-white mt-2 text-sm line-clamp-1">{order.title}</h3>
-                    <p className="text-[10px] text-gray-500 mt-0.5">{order.style}</p>
+                    <h3 className="font-bold text-white mt-3 text-base line-clamp-1">{order.title}</h3>
+                    <p className="text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-widest">{order.style}</p>
                   </div>
-                  <p className="text-[9px] text-gray-700 font-mono">{new Date(order.timestamp).toLocaleDateString()}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] text-gray-700 font-mono">{new Date(order.timestamp).toLocaleDateString()}</p>
+                    <button className="text-[9px] font-black text-purple-400 uppercase tracking-widest">查看详情</button>
+                  </div>
                 </div>
               </div>
             ))}

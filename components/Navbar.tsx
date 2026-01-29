@@ -11,7 +11,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
   const tabs = [
     { id: AppView.HOME, label: '首页', icon: Home },
-    { id: AppView.ORDERS, label: '作品', icon: ClipboardList },
+    { id: AppView.ORDERS, label: '订单', icon: ClipboardList },
     { id: AppView.PROFILE, label: '我的', icon: User },
   ];
 

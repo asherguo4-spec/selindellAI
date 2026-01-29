@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, MessageCircle, Mail, HelpCircle, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { ChevronLeft, MessageCircle, Mail, HelpCircle, Send, CheckCircle2, Loader2, Lock, Sparkles, Headphones, User } from 'lucide-react';
 import { supabase } from '../lib/supabase.ts';
 
 interface CustomerServiceProps {
@@ -13,42 +13,32 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ userId, onBack }) => 
   const [contactInfo, setContactInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const faqs = [
     { q: '生成后的手办什么时候发货？', a: '由于是 AI 定制产品，生产周期通常为 7-14 个工作日，发货后您会收到物流通知。' },
     { q: '可以修改已经生成的图片吗？', a: '生成后如有不满意，建议重新输入创意生成，目前暂不支持对已生成结果的局部修改。' },
     { q: '收到的实物与图片有色差怎么办？', a: '受屏幕显示和生产工艺影响，实物可能存在微小色差，这属于定制类产品的正常范围。' },
+    { q: '订单支持退款吗？', a: '由于是私人深度定制产品，订单进入生产流程后不支持无理由退款，请您谅解。' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedback.trim()) return;
+    if (!feedback.trim()) { setFormError("请填写您的反馈内容"); return; }
+    if (!userId) return;
     
     setIsSubmitting(true);
+    setFormError(null);
     try {
-      // 尝试插入，带上 user_id
       const { error } = await supabase.from('feedbacks').insert([
-        {
-          content: feedback.trim(),
+        { 
+          content: feedback.trim(), 
           contact: contactInfo.trim(),
           user_id: userId
         }
       ]);
 
-      if (error) {
-        // 如果是因为 user_id 不存在，尝试不带 user_id 再次提交
-        if (error.message.includes('user_id') || error.code === '42703') {
-          const { error: retryError } = await supabase.from('feedbacks').insert([
-            {
-              content: feedback.trim(),
-              contact: contactInfo.trim()
-            }
-          ]);
-          if (retryError) throw retryError;
-        } else {
-          throw error;
-        }
-      }
+      if (error) throw error;
 
       setSubmitted(true);
       setFeedback('');
@@ -56,46 +46,70 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ userId, onBack }) => 
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err: any) {
       console.error("Feedback submission failed:", err);
-      alert(`反馈提交失败: ${err.message}`);
+      setFormError(`提交失败，请重试`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const isGuest = !userId;
+  const isButtonDisabled = isSubmitting || isGuest;
+
   return (
-    <div className="p-6 pb-24 animate-in slide-in-from-right duration-300 min-h-screen overflow-y-auto no-scrollbar">
-      <div className="flex items-center space-x-4 mb-8">
-        <button onClick={onBack} className="p-2 bg-white/5 rounded-full"><ChevronLeft size={20} /></button>
-        <h2 className="text-xl font-bold">联系客服</h2>
+    <div className="p-6 pb-24 animate-in slide-in-from-right duration-300 h-full overflow-y-auto no-scrollbar">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-4">
+          <button onClick={onBack} className="p-2 bg-white/5 rounded-full"><ChevronLeft size={20} /></button>
+          <h2 className="text-xl font-bold">客户服务</h2>
+        </div>
+        <div className="flex items-center space-x-1.5 px-3 py-1 bg-green-500/10 rounded-full">
+          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-[9px] font-black text-green-500 uppercase tracking-widest">顾问在线</span>
+        </div>
       </div>
 
+      {/* Main Support Entry */}
       <div className="grid grid-cols-2 gap-4 mb-10">
-        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-3 border-white/5">
-          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-            <MessageCircle size={24} />
+        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-4 border-white/5 bg-white/[0.02] relative group overflow-hidden active:scale-95 transition-all">
+          <div className="absolute top-0 right-0 p-2 bg-purple-500/10 text-purple-400">
+            <Sparkles size={10} />
           </div>
-          <span className="font-bold text-sm">在线咨询</span>
-          <span className="text-[10px] text-gray-500">9:00 - 22:00</span>
+          <div className="w-16 h-16 rounded-full border-2 border-purple-500/30 p-1.5 relative shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+            <div className="w-full h-full rounded-full overflow-hidden bg-purple-500/10 flex items-center justify-center">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lynn&backgroundColor=b6e3f4" alt="Lynn" className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-4 border-[#0a0514] rounded-full"></div>
+          </div>
+          <div className="text-center">
+            <span className="font-bold text-sm block text-white">接入人工</span>
+            <span className="text-[10px] text-purple-400 font-black uppercase tracking-widest mt-0.5">顾问 - 灵汐</span>
+          </div>
         </button>
-        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-3 border-white/5">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <Mail size={24} />
+        <button className="glass-card p-6 rounded-[32px] flex flex-col items-center space-y-4 border-white/5 bg-white/[0.02] active:scale-95 transition-all">
+          <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+            <MessageCircle size={28} />
           </div>
-          <span className="font-bold text-sm">邮件反馈</span>
-          <span className="text-[10px] text-gray-500">24小时接收</span>
+          <div className="text-center">
+            <span className="font-bold text-sm block text-white">在线留言</span>
+            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-0.5">24h 异步受理</span>
+          </div>
         </button>
       </div>
 
+      {/* FAQ Section */}
       <div className="mb-10">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-1">常见问题</h3>
+        <div className="flex items-center justify-between mb-5 px-1">
+          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">常见问题解答</h3>
+          <span className="text-[9px] text-purple-500/60 font-black uppercase tracking-widest">Self-Service</span>
+        </div>
         <div className="space-y-3">
           {faqs.map((faq, idx) => (
-            <details key={idx} className="glass-card rounded-2xl group border-white/5">
-              <summary className="p-4 list-none flex justify-between items-center cursor-pointer font-medium text-sm">
+            <details key={idx} className="glass-card rounded-2xl group border-white/5 bg-white/[0.01] overflow-hidden">
+              <summary className="p-4 list-none flex justify-between items-center cursor-pointer font-bold text-sm text-gray-300">
                 <span>{faq.q}</span>
                 <ChevronLeft size={16} className="-rotate-90 group-open:rotate-90 transition-transform text-gray-600" />
               </summary>
-              <div className="px-4 pb-4 text-xs text-gray-500 leading-relaxed border-t border-white/5 pt-3">
+              <div className="px-5 pb-5 text-xs text-gray-500 leading-relaxed border-t border-white/5 pt-4 animate-in fade-in duration-300">
                 {faq.a}
               </div>
             </details>
@@ -103,41 +117,72 @@ const CustomerService: React.FC<CustomerServiceProps> = ({ userId, onBack }) => 
         </div>
       </div>
 
+      {/* Feedback Form */}
       <div className="mb-8">
-        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-1">问题反馈</h3>
+        <div className="flex items-center justify-between mb-5 px-1">
+          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">反馈与建议</h3>
+          <HelpCircle size={12} className="text-gray-700" />
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="glass-card rounded-[28px] p-4 border-white/10 focus-within:border-purple-500/30 transition-colors">
+          <div className="glass-card rounded-[32px] p-6 border-white/10 focus-within:border-purple-500/30 transition-all bg-white/[0.01]">
             <textarea 
-              className="w-full bg-transparent border-none focus:ring-0 text-sm h-32 resize-none placeholder:text-gray-800 text-white leading-relaxed"
-              placeholder="您的建议将直接发送给造物主团队..."
+              className="w-full bg-transparent border-none focus:ring-0 text-sm h-32 resize-none placeholder:text-gray-800 text-white leading-relaxed no-scrollbar"
+              placeholder="请详细描述您的建议或遇到的困难，灵汐会认真阅读每一条消息..."
               value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
+              onChange={(e) => { setFeedback(e.target.value); setFormError(null); }}
               disabled={isSubmitting}
             />
           </div>
-          <div className="glass-card rounded-[20px] px-4 py-3 border-white/10 flex items-center space-x-3 focus-within:border-purple-500/30 transition-colors">
-            <Mail size={18} className="text-gray-600 shrink-0" />
+          <div className="glass-card rounded-[24px] px-5 py-4 border-white/10 flex items-center space-x-3 focus-within:border-purple-500/30 transition-all bg-white/[0.01]">
+            <Mail size={18} className="text-gray-700 shrink-0" />
             <input 
               type="text" 
-              className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-gray-800 text-white"
-              placeholder="您的联系方式 (选填)"
+              className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-gray-800 text-white font-medium"
+              placeholder="您的联系方式 (手机/微信，选填)"
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
               disabled={isSubmitting}
             />
           </div>
           
+          {formError && (
+            <p className="text-xs text-red-400 font-bold px-1 animate-pulse">{formError}</p>
+          )}
+
           <button 
             type="submit"
-            disabled={isSubmitting || !feedback.trim()}
-            className={`w-full h-16 rounded-[24px] flex items-center justify-center space-x-2 font-bold transition-all ${
-              isSubmitting || !feedback.trim() ? 'bg-gray-800 text-gray-500' : 'purple-gradient active:scale-95 shadow-xl shadow-purple-500/30'
+            disabled={isButtonDisabled}
+            className={`w-full h-18 rounded-[28px] flex items-center justify-center space-x-3 font-black transition-all ${
+              isButtonDisabled ? 'bg-white/5 text-gray-700 cursor-not-allowed' : 'purple-gradient active:scale-95 shadow-2xl shadow-purple-500/40 text-white'
             }`}
           >
-            {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : submitted ? <CheckCircle2 size={20} /> : <Send size={20} />}
-            <span>{isSubmitting ? '发送中...' : submitted ? '已收到反馈' : '提交反馈'}</span>
+            {isSubmitting ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : submitted ? (
+              <CheckCircle2 size={20} />
+            ) : isGuest ? (
+              <Lock size={18} />
+            ) : (
+              <Send size={20} />
+            )}
+            <span className="text-lg">
+              {isSubmitting ? '正在投递...' : submitted ? '提交成功，感谢反馈' : isGuest ? '登录后即可提交反馈' : '提交反馈'}
+            </span>
           </button>
+          
+          {isGuest && (
+            <p className="text-center text-[10px] text-gray-700 font-black uppercase tracking-[0.1em] mt-3">
+              灵汐的小贴士：完成登录即可开启专属造物档案
+            </p>
+          )}
         </form>
+      </div>
+
+      {/* Support Slogan */}
+      <div className="text-center py-6">
+        <p className="text-[9px] text-gray-800 font-black uppercase tracking-[0.4em] opacity-50">
+          Crafted with care by Selindell Ops
+        </p>
       </div>
     </div>
   );

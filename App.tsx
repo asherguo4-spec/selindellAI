@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView, GeneratedCreation, Address, UserProfile } from './types.ts';
+import { AppView, GeneratedCreation, Address, UserProfile, UserLevel } from './types.ts';
 import Navbar from './components/Navbar.tsx';
 import Home from './views/Home.tsx';
 import Orders from './views/Orders.tsx';
@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [myCreations, setMyCreations] = useState<GeneratedCreation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<GeneratedCreation | null>(null);
+  const [orderCount, setOrderCount] = useState(0);
 
   const getDefaultProfile = (id: string | null): UserProfile => ({
     id: id || '',
@@ -26,7 +27,9 @@ const App: React.FC = () => {
     avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id || 'guest'}`,
     email: '',
     bio: id ? '正在加载您的造物灵魂...' : '登录后开启私人馆藏',
-    isRegistered: !!id
+    isRegistered: !!id,
+    level: 'visitor',
+    orderCount: 0
   });
 
   const [userProfile, setUserProfile] = useState<UserProfile>(getDefaultProfile(null));
@@ -49,13 +52,16 @@ const App: React.FC = () => {
       const uid = session.user.id;
       setUserId(uid);
       
-      setUserProfile(prev => ({
-        ...prev,
-        id: uid,
-        email: session.user.email || '',
-        isRegistered: true,
-        nickname: prev.nickname === '访客造物主' ? '造物主' : prev.nickname
-      }));
+      // 先加载订单数来决定等级
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', uid);
+      
+      const currentOrderCount = count || 0;
+      setOrderCount(currentOrderCount);
+
+      const level: UserLevel = currentOrderCount > 0 ? 'elite' : 'creator';
 
       const { data: profileData } = await supabase
         .from('users')
@@ -70,7 +76,15 @@ const App: React.FC = () => {
           bio: profileData.bio || '追求极致的造物美学',
           avatar: profileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.nickname}`,
           email: session.user.email || '',
-          isRegistered: true
+          isRegistered: true,
+          level: level,
+          orderCount: currentOrderCount
+        });
+      } else {
+        setUserProfile({
+          ...getDefaultProfile(uid),
+          level: level,
+          orderCount: currentOrderCount
         });
       }
 
@@ -81,18 +95,20 @@ const App: React.FC = () => {
       setUserId(null);
       setUserProfile(getDefaultProfile(null));
       setAddresses([]);
+      setOrderCount(0);
     }
     setIsLoadingProfile(false);
   };
 
   const handleRegisterSuccess = (nickname: string) => {
-    setUserProfile(prev => ({ ...prev, nickname, isRegistered: true }));
+    setUserProfile(prev => ({ ...prev, nickname, isRegistered: true, level: 'creator' }));
     setCurrentView(AppView.PROFILE);
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setCurrentView(AppView.HOME);
+    // 退出后保留在个人中心视图，UI 会通过 handleAuthChange 自动切回访客态
+    setCurrentView(AppView.PROFILE);
   };
 
   const handleCreationSuccess = (creation: GeneratedCreation) => {
@@ -103,6 +119,8 @@ const App: React.FC = () => {
     setMyCreations(prev => prev.map(c => 
       c.id === creationId ? { ...c, status: 'paid' as const } : c
     ));
+    setOrderCount(prev => prev + 1);
+    setUserProfile(prev => ({ ...prev, orderCount: prev.orderCount + 1, level: 'elite' }));
     setPendingOrder(null);
     setCurrentView(AppView.ORDERS);
   };
@@ -146,7 +164,7 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case AppView.REGISTER: return <Register onRegisterSuccess={handleRegisterSuccess} />;
+      case AppView.REGISTER: return <Register onRegisterSuccess={handleRegisterSuccess} onBack={() => setCurrentView(AppView.PROFILE)} />;
       case AppView.HOME:
       case AppView.GENERATING:
       case AppView.RESULT:
@@ -160,7 +178,7 @@ const App: React.FC = () => {
       case AppView.ADDRESS_LIST:
         return <AddressList addresses={addresses} onAddAddress={addAddress} onDeleteAddress={deleteAddress} onBack={() => setCurrentView(AppView.PROFILE)} />;
       case AppView.CUSTOMER_SERVICE:
-        return userId ? <CustomerService userId={userId} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
+        return <CustomerService userId={userId || ''} onBack={() => setCurrentView(AppView.PROFILE)} />;
       case AppView.SETTINGS:
         return userId ? <SettingsView userId={userId} profile={userProfile} onUpdate={handleProfileUpdate} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
       default: return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
@@ -186,9 +204,12 @@ const App: React.FC = () => {
           </div>
           <button 
             onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
-            className="w-8 h-8 rounded-full border border-white/10 overflow-hidden"
+            className="w-8 h-8 rounded-full border border-white/10 overflow-hidden relative"
           >
             <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
+            {userProfile.level === 'elite' && (
+              <div className="absolute inset-0 border-2 border-purple-500 rounded-full"></div>
+            )}
           </button>
         </header>
       )}
