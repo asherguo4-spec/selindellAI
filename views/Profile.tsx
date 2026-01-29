@@ -31,25 +31,25 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
   ];
 
   return (
-    <div className="min-h-screen">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-8">
+    <div className="h-full flex flex-col">
+      <div className="p-6 flex-1 overflow-y-auto no-scrollbar pb-24">
+        <div className="flex justify-between items-center mb-6">
           <div className="w-9"></div>
           <h2 className="text-lg font-bold">{isGuest ? '欢迎' : '个人中心'}</h2>
           {!isGuest && (
             <button onClick={() => setView(AppView.SETTINGS)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-              <Settings size={20} />
+              <Settings size={18} />
             </button>
           )}
           {isGuest && <div className="w-9"></div>}
         </div>
 
         {/* User Card */}
-        <div className="flex flex-col items-center mb-8 text-center px-4">
-          <div className="relative mb-4">
+        <div className="flex flex-col items-center mb-6 text-center px-4">
+          <div className="relative mb-3">
             <button 
               onClick={() => setIsAvatarZoomed(true)}
-              className={`w-24 h-24 rounded-full border-2 ${isGuest ? 'border-gray-700' : 'border-purple-500'} p-1 shadow-[0_0_20px_rgba(168,85,247,0.15)] active:scale-95 transition-transform`}
+              className={`w-20 h-20 rounded-full border-2 ${isGuest ? 'border-gray-700' : 'border-purple-500'} p-1 shadow-[0_0_20px_rgba(168,85,247,0.15)] active:scale-95 transition-transform`}
             >
               <img 
                 src={userProfile.avatar} 
@@ -58,67 +58,67 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               />
             </button>
             {!isGuest && (
-              <div className="absolute bottom-1 right-1 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center border-2 border-[#0f0a19]">
+              <div className="absolute bottom-1 right-0 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center border-2 border-[#0f0a19]">
                 <Shield size={12} className="text-white" />
               </div>
             )}
           </div>
           
-          <h1 className={`text-2xl font-black mb-1 tracking-tight ${isGuest ? 'text-gray-400' : 'text-white'}`}>
+          <h1 className={`text-xl font-black mb-1 tracking-tight ${isGuest ? 'text-gray-400' : 'text-white'}`}>
             {userProfile.nickname}
           </h1>
           
           {!isGuest ? (
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 mb-6">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 mb-4">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">ID:</span>
               <span className="text-[10px] font-mono text-purple-400 font-bold">{userProfile.id}</span>
             </div>
           ) : (
-            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-6">登录后开启私人馆藏</div>
+            <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-4">登录后开启私人馆藏</div>
           )}
           
           {userProfile.bio && (
             <div className="relative max-w-[280px]">
-              <Quote size={12} className="absolute -top-1 -left-4 text-purple-500/40 rotate-180" />
-              <p className="text-sm text-gray-400 italic leading-relaxed">{userProfile.bio}</p>
-              <Quote size={12} className="absolute -bottom-1 -right-4 text-purple-500/40" />
+              <Quote size={10} className="absolute -top-1 -left-4 text-purple-500/40 rotate-180" />
+              <p className="text-xs text-gray-400 italic leading-relaxed">{userProfile.bio}</p>
+              <Quote size={10} className="absolute -bottom-1 -right-4 text-purple-500/40" />
             </div>
           )}
         </div>
 
         {/* Registration CTA for Guests */}
         {isGuest && (
-          <div className="mb-8">
+          <div className="mb-6">
             <button 
               onClick={() => setView(AppView.REGISTER)}
-              className="w-full py-5 rounded-[28px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
+              className="w-full py-4 rounded-[24px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
             >
-              <Sparkles size={20} className="animate-pulse" />
-              <span className="text-lg font-black">登录 / 新用户注册</span>
+              <Sparkles size={18} className="animate-pulse" />
+              <span className="text-base font-black">登录 / 新用户注册</span>
             </button>
           </div>
         )}
 
         {/* Menu List */}
-        <div className="glass-card rounded-[28px] divide-y divide-white/5 overflow-hidden mb-8">
+        <div className="glass-card rounded-[24px] divide-y divide-white/5 overflow-hidden mb-6">
           {menuItems.map((item, idx) => (
             <button 
               key={idx} 
               onClick={item.onClick}
-              className="w-full flex items-center justify-between p-5 active:bg-white/5 transition-colors text-left"
+              className="w-full flex items-center justify-between p-4 active:bg-white/5 transition-colors text-left"
             >
               <div className="flex items-center space-x-4">
-                <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${item.color}`}>
-                  <item.icon size={20} />
+                <div className={`w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center ${item.color}`}>
+                  <item.icon size={18} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-medium">{item.label}</span>
+                  <span className="text-sm font-medium">{item.label}</span>
                   {isGuest && item.label === '收货地址' && (
-                    <span className="text-[9px] text-gray-600 font-bold">请先登录</span>
+                    <span className="text-[8px] text-gray-600 font-bold">请先登录</span>
                   )}
                 </div>
               </div>
-              <ChevronRight size={18} className="text-gray-600" />
+              <ChevronRight size={16} className="text-gray-600" />
             </button>
           ))}
         </div>
@@ -127,23 +127,23 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         {!isGuest && (
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full py-5 rounded-[24px] border border-red-500/30 text-red-500 font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
+            className="w-full py-4 rounded-[20px] border border-red-500/30 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             <span>退出登录</span>
           </button>
         )}
 
         {/* Build Version Indicator */}
-        <div className="flex items-center justify-center space-x-2 mt-8 opacity-20 hover:opacity-100 transition-opacity">
-          <Info size={10} className="text-gray-500" />
+        <div className="flex items-center justify-center space-x-2 mt-4 opacity-20 transition-opacity">
+          <Info size={8} className="text-gray-500" />
           <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
-            Core Build: 2026.01.28-v3.black_theme
+            Build: 2026.01.28-v3.viewport_fix
           </span>
         </div>
       </div>
 
-      {/* Logout Confirmation Dialog */}
+      {/* Overlays remain same but within viewport context */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
@@ -151,16 +151,14 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="text-red-500" size={32} />
             </div>
-            <h3 className="text-lg font-bold mb-2 text-white">真的要退出登录吗</h3>
-            <p className="text-gray-500 text-xs mb-6 leading-relaxed">
-              退出登录后，用户资料将不复存在<b>物理抹除</b>。
-            </p>
+            <h3 className="text-lg font-bold mb-2 text-white">确认退出吗</h3>
+            <p className="text-gray-500 text-xs mb-6">退出登录后，本地馆藏将无法跨端同步。</p>
             <div className="space-y-3">
               <button 
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold active:scale-95 transition-transform"
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold"
               >
-                确认退出登录
+                确认退出
               </button>
               <button 
                 onClick={() => setShowLogoutConfirm(false)}

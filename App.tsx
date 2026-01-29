@@ -25,7 +25,7 @@ const App: React.FC = () => {
     nickname: id ? '同步中...' : '访客造物主',
     avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id || 'guest'}`,
     email: '',
-    bio: id ? '正在加载您的造物灵魂...' : '即刻注册，同步你的造物灵感',
+    bio: id ? '正在加载您的造物灵魂...' : '登录后开启私人馆藏',
     isRegistered: !!id
   });
 
@@ -137,7 +137,7 @@ const App: React.FC = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#0a0514] flex flex-col items-center justify-center">
+      <div className="max-w-md mx-auto h-[100dvh] bg-[#0a0514] flex flex-col items-center justify-center overflow-hidden">
         <Loader2 className="animate-spin text-purple-500 mb-4" size={40} />
         <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Syncing Soul Data...</p>
       </div>
@@ -154,7 +154,6 @@ const App: React.FC = () => {
       case AppView.CHECKOUT:
         return pendingOrder && userId ? <Checkout userId={userId} creation={pendingOrder} addresses={addresses} onPaymentComplete={handlePaymentComplete} onBack={() => setCurrentView(AppView.RESULT)} /> : null;
       case AppView.ORDERS:
-        // 修正：不再强制跳转 Register，允许 Guest 模式查看本地作品
         return <Orders userId={userId || ''} creations={myCreations} />;
       case AppView.PROFILE:
         return <Profile setView={setCurrentView} userProfile={userProfile} onLogout={handleLogout} />;
@@ -178,16 +177,16 @@ const App: React.FC = () => {
   ].includes(currentView);
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-transparent shadow-[0_0_100px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+    <div className="max-w-md mx-auto h-[100dvh] bg-transparent shadow-[0_0_100px_rgba(0,0,0,0.5)] relative flex flex-col overflow-hidden">
       {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
-        <header className="h-20 px-6 flex items-end pb-4 justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
+        <header className="h-16 px-6 flex items-center justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
           <div className="flex items-center space-x-2.5">
              <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
              <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
           </div>
           <button 
             onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
-            className="w-10 h-10 rounded-full border border-white/10 overflow-hidden"
+            className="w-8 h-8 rounded-full border border-white/10 overflow-hidden"
           >
             <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
           </button>
