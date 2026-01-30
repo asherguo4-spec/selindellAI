@@ -85,7 +85,7 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
     <div className="py-8 flex flex-col h-full overflow-hidden">
       <div className="flex justify-between items-center mb-10 shrink-0">
         <div>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight">私人馆藏</h2>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">订单</h2>
           {schemaError && (
             <div className="flex items-center space-x-1 mt-1">
               <Database size={10} className="text-orange-500" />

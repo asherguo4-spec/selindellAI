@@ -124,7 +124,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               className="w-full py-4 rounded-[24px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
             >
               <Sparkles size={18} className="animate-pulse" />
-              <span className="text-base font-black text-white">登录 / 重塑灵魂</span>
+              <span className="text-base font-black text-white">登录 / 新用户注册</span>
             </button>
           </div>
         )}

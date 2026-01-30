@@ -46,12 +46,12 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           .eq('id', finalUserId)
           .single();
         
-        finalNickname = profile?.nickname || '造物主';
-        setSuccessMsg("验证成功，欢迎归来");
+        finalNickname = profile?.nickname || '用户';
+        setSuccessMsg("登录成功，欢迎回来");
       } else {
         // --- 注册模式 ---
         if (!finalNickname) {
-          setErrorHint("造物主需要一个响亮的昵称");
+          setErrorHint("请设置您的用户昵称");
           setIsSubmitting(false);
           return;
         }
@@ -61,41 +61,36 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           password: password.trim(),
         });
         
-        // 关键逻辑：如果账号在 Auth 系统已存在，说明你只删了表没删账号
         if (signUpError) {
           console.warn("SignUp Error, attempting auto-recovery:", signUpError.message);
           
-          // 无论错误信息是什么，只要注册不通过，我们就尝试用这套账号密码登录
           const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password.trim(),
           });
           
           if (loginError) {
-            // 如果登录也失败，说明可能是密码错了或者真正的注册异常
             if (signUpError.message.includes("already registered")) {
-              throw new Error("此账号已存在但密码不符，请尝试找回密码或更换邮箱。");
+              throw new Error("此账号已注册但密码不正确，请尝试重新登录。");
             }
             throw signUpError;
           }
           
-          // 登录成功，说明账号在，但数据库表里没数据（因为你清空了）
           finalUserId = loginData.user.id;
-          setSuccessMsg("检测到已有通行证，正在重塑灵魂档案...");
+          setSuccessMsg("检测到已有账号，正在同步您的数据...");
         } else {
           finalUserId = data.user?.id || null;
-          setSuccessMsg("注册成功，开启造物之旅");
+          setSuccessMsg("注册成功，欢迎加入");
         }
       }
 
       // --- 统合：重建或更新数据库档案 ---
       if (finalUserId) {
-        // 使用 upsert 确保 public.users 表里一定有这行数据
         await supabase.from('users').upsert({
           id: finalUserId,
           nickname: finalNickname,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${finalNickname}`,
-          bio: '追求极致的造物美学'
+          bio: '在这里记录您的造物灵感'
         });
       }
       
@@ -116,7 +111,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           <CheckCircle2 className="text-purple-500" size={48} />
         </div>
         <h2 className="text-3xl font-black text-white mb-2">{successMsg}</h2>
-        <p className="text-gray-500 text-[10px] font-black tracking-[0.4em] uppercase">Syncing Soul Data...</p>
+        <p className="text-gray-500 text-[10px] font-black tracking-[0.4em] uppercase">Loading Data...</p>
       </div>
     );
   }
@@ -139,8 +134,8 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
         </div>
       </div>
 
-      <h1 className="text-3xl font-black mb-3 text-white tracking-tight">{isLoginMode ? '欢迎归馆' : '加入造物行列'}</h1>
-      <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-[240px]">{isLoginMode ? '验证身份以同步您的私人灵感馆藏' : '在这里，每个灵感都能找到实物归宿'}</p>
+      <h1 className="text-3xl font-black mb-3 text-white tracking-tight">{isLoginMode ? '欢迎登录' : '新用户注册'}</h1>
+      <p className="text-gray-500 text-sm mb-10 leading-relaxed max-w-[240px]">{isLoginMode ? '请登录您的账号以同步数据' : '填写基本信息，开启您的造物体验'}</p>
 
       <div className="w-full max-w-sm space-y-5">
         {!isLoginMode && (
@@ -148,7 +143,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
             <User size={20} className="text-gray-500 mr-3" />
             <input 
               type="text" 
-              placeholder="您的造物主昵称"
+              placeholder="请输入您的昵称"
               className="bg-transparent border-none focus:ring-0 text-white w-full text-sm font-medium"
               value={nickname}
               onChange={(e) => { setNickname(e.target.value); setErrorHint(null); }}
@@ -160,7 +155,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           <Mail size={20} className="text-gray-500 mr-3" />
           <input 
             type="email" 
-            placeholder="邮箱账号"
+            placeholder="请输入邮箱地址"
             className="bg-transparent border-none focus:ring-0 text-white w-full text-sm font-medium"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setErrorHint(null); }}
@@ -171,7 +166,7 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           <Lock size={20} className="text-gray-500 mr-3" />
           <input 
             type="password" 
-            placeholder="通行密码"
+            placeholder="请输入密码"
             className="bg-transparent border-none focus:ring-0 text-white w-full text-sm font-medium"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setErrorHint(null); }}
@@ -191,19 +186,19 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           className="w-full h-18 rounded-2xl purple-gradient flex items-center justify-center space-x-3 font-black text-lg shadow-2xl shadow-purple-500/30 active:scale-95 transition-all text-white"
         >
           {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : (isLoginMode ? <LogIn size={20} /> : <ArrowRight size={20} />)}
-          <span>{isSubmitting ? '同步中...' : (isLoginMode ? '立即进入' : '开启旅程')}</span>
+          <span>{isSubmitting ? '同步中...' : (isLoginMode ? '立即登录' : '立即注册')}</span>
         </button>
 
         <button 
           onClick={() => { setIsLoginMode(!isLoginMode); setErrorHint(null); }}
           className="w-full py-2 text-xs text-gray-500 font-bold hover:text-purple-400 transition-colors uppercase tracking-widest"
         >
-          {isLoginMode ? '没有造物档案？点击创建' : '已有档案？点此同步'}
+          {isLoginMode ? '还没有账号？点击注册' : '已有账号？点击登录'}
         </button>
       </div>
 
       <div className="mt-16 text-[9px] text-gray-700 font-black uppercase tracking-[0.3em]">
-        Secured by Selindell Auth 2.0
+        Secured by Selindell Auth
       </div>
     </div>
   );

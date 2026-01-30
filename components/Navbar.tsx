@@ -16,11 +16,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
   ];
 
   return (
-    <div className="fixed bottom-8 left-0 right-0 flex justify-center z-50 px-6">
-      <nav className="glass-card rounded-full h-20 flex justify-around items-center px-6 py-2 shadow-[0_25px_60px_rgba(0,0,0,0.6)] border-white/10 relative overflow-hidden w-full max-w-sm">
-        {/* Subtle glow effect behind the capsule */}
-        <div className="absolute inset-0 bg-purple-500/5 -z-10 blur-2xl"></div>
-        
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      {/* 标准底栏容器：全宽、毛玻璃效果、顶部细边框 */}
+      <nav className="w-full bg-[#050505]/90 backdrop-blur-xl border-t border-white/[0.05] flex justify-around items-center h-[72px] pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = currentView === tab.id || (tab.id === AppView.HOME && (currentView === AppView.GENERATING || currentView === AppView.RESULT));
@@ -29,28 +27,29 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
             <button
               key={tab.id}
               onClick={() => setView(tab.id)}
-              className={`relative flex flex-col items-center justify-center px-6 py-2 transition-all duration-500 group ${
-                isActive ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+              className={`flex-1 flex flex-col items-center justify-center h-full transition-all duration-300 relative ${
+                isActive ? 'text-purple-400' : 'text-gray-500'
               }`}
             >
-              {/* Active Pill Background */}
-              {isActive && (
-                <div className="absolute inset-0 bg-purple-500/10 rounded-full blur-md animate-pulse"></div>
-              )}
-              
-              <div className={`relative transition-transform duration-300 ${isActive ? 'scale-115 -translate-y-1' : 'scale-100 hover:scale-110'}`}>
-                <Icon size={isActive ? 24 : 22} strokeWidth={isActive ? 2.5 : 2} />
+              {/* 图标部分 */}
+              <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'scale-100'}`}>
+                <Icon 
+                  size={24} 
+                  strokeWidth={isActive ? 2.5 : 2} 
+                  className={isActive ? "drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" : ""}
+                />
               </div>
               
-              <span className={`text-[10px] font-black mt-1 transition-all duration-300 uppercase tracking-widest ${
-                isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
+              {/* 文字标签：标准紧凑排版 */}
+              <span className={`text-[11px] font-bold mt-1.5 transition-all duration-300 ${
+                isActive ? 'opacity-100' : 'opacity-80'
               }`}>
                 {tab.label}
               </span>
 
-              {/* Dot indicator */}
+              {/* 激活状态的顶部指示条（可选，增加视觉反馈） */}
               {isActive && (
-                <div className="absolute -bottom-1.5 w-1 h-1 bg-purple-400 rounded-full shadow-[0_0_10px_rgba(168,85,247,1)]"></div>
+                <div className="absolute top-0 w-8 h-[2px] bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
               )}
             </button>
           );
