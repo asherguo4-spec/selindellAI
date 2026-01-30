@@ -21,7 +21,6 @@ const App: React.FC = () => {
   const [pendingOrder, setPendingOrder] = useState<GeneratedCreation | null>(null);
   const [orderCount, setOrderCount] = useState(0);
 
-  // 这里的 ID 生成逻辑是固定的，所以同一个长 ID 永远会对应同一个短 ID
   const generateShortId = (id: string) => {
     if (!id) return 'GUEST-0000';
     return `SLD-${id.substring(0, 4).toUpperCase()}`;
@@ -88,7 +87,6 @@ const App: React.FC = () => {
           orderCount: currentOrderCount
         });
       } else {
-        // 如果数据库没数据，但有 Session（说明清空过数据库），保持默认状态引导重塑
         setUserProfile({
           ...getDefaultProfile(uid),
           level: level,
@@ -182,7 +180,7 @@ const App: React.FC = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="max-w-md mx-auto h-[100dvh] bg-[#0a0514] flex flex-col items-center justify-center overflow-hidden">
+      <div className="w-full h-[100dvh] bg-[#0a0514] flex flex-col items-center justify-center overflow-hidden">
         <div className="loader-dot mb-8"></div>
         <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Soul Link Synchronizing...</p>
       </div>
@@ -199,7 +197,7 @@ const App: React.FC = () => {
       case AppView.CHECKOUT:
         return pendingOrder && userId ? <Checkout userId={userId} creation={pendingOrder} addresses={addresses} onPaymentComplete={handlePaymentComplete} onBack={() => setCurrentView(AppView.RESULT)} /> : null;
       case AppView.ORDERS:
-        return <Orders userId={userId || ''} creations={myCreations} />;
+        return <Orders userId={userId || ''} creations={myCreations} setView={setCurrentView} />;
       case AppView.PROFILE:
         return <Profile setView={setCurrentView} userProfile={userProfile} onLogout={handleLogout} />;
       case AppView.ADDRESS_LIST:
@@ -222,30 +220,33 @@ const App: React.FC = () => {
   ].includes(currentView);
 
   return (
-    <div className="max-w-md mx-auto h-[100dvh] bg-transparent shadow-[0_0_100px_rgba(0,0,0,0.5)] relative flex flex-col overflow-hidden">
-      {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
-        <header className="h-16 px-6 flex items-center justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
-          <div className="flex items-center space-x-2.5">
-             <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
-             <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
-          </div>
-          <button 
-            onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
-            className="w-8 h-8 rounded-full border border-white/10 overflow-hidden relative"
-          >
-            <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
-            {userProfile.level === 'elite' && (
-              <div className="absolute inset-0 border-2 border-purple-500 rounded-full"></div>
-            )}
-          </button>
-        </header>
-      )}
+    <div className="min-h-[100dvh] bg-transparent relative flex flex-col items-center">
+      {/* Dynamic wrapper that responds to screen size */}
+      <div className="w-full max-w-6xl flex flex-col min-h-[100dvh] relative overflow-x-hidden">
+        {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
+          <header className="h-16 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
+            <div className="flex items-center space-x-2.5">
+               <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
+               <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
+            </div>
+            <button 
+              onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
+              className="w-8 h-8 rounded-full border border-white/10 overflow-hidden relative active:scale-95 transition-transform"
+            >
+              <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
+              {userProfile.level === 'elite' && (
+                <div className="absolute inset-0 border-2 border-purple-500 rounded-full"></div>
+              )}
+            </button>
+          </header>
+        )}
 
-      <main className="flex-1 overflow-y-auto no-scrollbar relative">
-        {renderView()}
-      </main>
+        <main className="flex-1 overflow-y-auto no-scrollbar relative w-full px-4 md:px-8 lg:px-12 max-w-5xl mx-auto">
+          {renderView()}
+        </main>
 
-      {showNavbar && <Navbar currentView={currentView} setView={setCurrentView} />}
+        {showNavbar && <Navbar currentView={currentView} setView={setCurrentView} />}
+      </div>
     </div>
   );
 };

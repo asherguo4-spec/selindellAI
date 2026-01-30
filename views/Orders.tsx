@@ -7,8 +7,7 @@ import { supabase } from '../lib/supabase.ts';
 interface OrdersProps {
   userId: string;
   creations: GeneratedCreation[];
-  // 注入 setView 以便空状态跳转
-  setView?: (view: AppView) => void;
+  setView: (view: AppView) => void;
 }
 
 const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
@@ -73,9 +72,9 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
   });
 
   if (loading && dbOrders.length === 0) return (
-    <div className="flex flex-col items-center justify-center h-full space-y-4">
+    <div className="flex flex-col items-center justify-center h-[70vh] space-y-4">
       <div className="relative">
-        <Loader2 className="animate-spin text-purple-500" size={40} />
+        <Loader2 className="animate-spin text-purple-500" size={48} />
         <div className="absolute inset-0 bg-purple-500/10 blur-xl rounded-full"></div>
       </div>
       <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em]">Syncing Collection...</p>
@@ -83,10 +82,10 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
   );
 
   return (
-    <div className="p-6 flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-center mb-8 shrink-0">
+    <div className="py-8 flex flex-col h-full overflow-hidden">
+      <div className="flex justify-between items-center mb-10 shrink-0">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">私人馆藏</h2>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">私人馆藏</h2>
           {schemaError && (
             <div className="flex items-center space-x-1 mt-1">
               <Database size={10} className="text-orange-500" />
@@ -97,43 +96,43 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
         <button 
           onClick={fetchOrders} 
           disabled={loading}
-          className={`p-2.5 bg-white/5 rounded-full text-gray-400 active:rotate-180 transition-all duration-500 ${loading ? 'opacity-30' : 'hover:bg-white/10'}`}
+          className={`p-3 bg-white/5 rounded-full text-gray-400 active:rotate-180 transition-all duration-500 ${loading ? 'opacity-30' : 'hover:bg-white/10'}`}
         >
-          <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={24} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
         {fetchError && (
-          <div className="glass-card rounded-2xl p-6 border-red-500/20 mb-6 flex flex-col items-center text-center">
-            <AlertCircle className="text-red-500 mb-3" size={24} />
-            <p className="text-xs text-gray-400 mb-4">{fetchError}</p>
-            <button onClick={fetchOrders} className="text-[10px] font-black uppercase tracking-widest text-purple-400 border border-purple-500/20 px-4 py-2 rounded-full">重试连接</button>
+          <div className="glass-card rounded-[32px] p-8 border-red-500/20 mb-8 flex flex-col items-center text-center">
+            <AlertCircle className="text-red-500 mb-4" size={32} />
+            <p className="text-gray-400 mb-6">{fetchError}</p>
+            <button onClick={fetchOrders} className="text-[10px] font-black uppercase tracking-widest text-purple-400 border border-purple-500/20 px-6 py-3 rounded-full">重试连接</button>
           </div>
         )}
 
         {allOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-10 text-center animate-in fade-in zoom-in duration-700">
-            <div className="w-24 h-24 bg-white/[0.02] rounded-full flex items-center justify-center mb-8 border border-white/5 relative">
-              <SearchX size={40} className="text-gray-800" />
+          <div className="flex flex-col items-center justify-center py-20 md:py-32 px-10 text-center animate-in fade-in zoom-in duration-700">
+            <div className="w-32 h-32 bg-white/[0.02] rounded-full flex items-center justify-center mb-8 border border-white/5 relative">
+              <SearchX size={56} className="text-gray-800" />
               <div className="absolute inset-0 bg-purple-500/5 blur-3xl rounded-full"></div>
             </div>
-            <h3 className="text-xl font-bold mb-3 text-white">馆内空空如也</h3>
-            <p className="text-gray-500 text-sm leading-relaxed mb-10">您的造物灵感还未落入尘世。现在就开始第一场造物仪式吧？</p>
+            <h3 className="text-2xl font-black mb-4 text-white">馆内空空如也</h3>
+            <p className="text-gray-500 text-sm leading-relaxed mb-10 max-w-sm">您的造物灵感还未落入尘世。现在就开始第一场造物仪式吧？</p>
             <button 
-              onClick={() => window.location.reload()} // 或者使用 setView 跳转首页
-              className="w-full h-16 rounded-2xl purple-gradient flex items-center justify-center space-x-3 font-black text-white active:scale-95 transition-all shadow-xl shadow-purple-500/20"
+              onClick={() => setView(AppView.HOME)}
+              className="w-full max-w-xs h-16 rounded-[24px] purple-gradient flex items-center justify-center space-x-3 font-black text-white active:scale-95 transition-all shadow-xl shadow-purple-500/20"
             >
               <Plus size={20} />
-              <span>立即开启造物</span>
+              <span>开启第一件作品</span>
             </button>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {allOrders.map((order) => (
-              <div key={order.id} className="glass-card rounded-[28px] p-3.5 flex space-x-4 border-white/5 active:bg-white/[0.04] transition-all animate-in fade-in slide-in-from-bottom-4">
-                <div className="w-20 h-28 rounded-2xl overflow-hidden bg-black/40 shrink-0 border border-white/5">
-                  <img src={order.imageUrl} className="w-full h-full object-cover" loading="lazy" />
+              <div key={order.id} className="glass-card rounded-[32px] p-4 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-5 border-white/5 hover:border-purple-500/30 active:scale-[0.98] transition-all animate-in fade-in slide-in-from-bottom-4 group">
+                <div className="w-full md:w-24 aspect-square md:aspect-[3/4] rounded-2xl overflow-hidden bg-black/40 shrink-0 border border-white/5">
+                  <img src={order.imageUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
@@ -143,12 +142,12 @@ const Orders: React.FC<OrdersProps> = ({ userId, creations, setView }) => {
                       </span>
                       <span className="text-[9px] text-gray-700 font-mono">#{order.id.slice(0, 6)}</span>
                     </div>
-                    <h3 className="font-bold text-white mt-3 text-base line-clamp-1">{order.title}</h3>
-                    <p className="text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-widest">{order.style}</p>
+                    <h3 className="font-bold text-white mt-4 text-lg line-clamp-2 leading-tight">{order.title}</h3>
+                    <p className="text-[10px] text-gray-500 mt-1 font-black uppercase tracking-widest">{order.style}</p>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mt-4">
                     <p className="text-[9px] text-gray-700 font-mono">{new Date(order.timestamp).toLocaleDateString()}</p>
-                    <button className="text-[9px] font-black text-purple-400 uppercase tracking-widest">查看详情</button>
+                    <button className="text-[10px] font-black text-purple-400 uppercase tracking-widest hover:text-purple-300 transition-colors">查看细节</button>
                   </div>
                 </div>
               </div>

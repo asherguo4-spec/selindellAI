@@ -5,6 +5,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Selindell造物</title>
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#a855f7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Selindell" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCB4PSI1MCUiIHk9IjU0JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidJbnRlcicsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9Ijc1IiBmaWxsPSIjRkZGRkZGIiBzdHlsZT0ibGV0dGVyLXNwYWNpbmc6IC0zcHg7IHRleHQtdHJhbnNmb3JtOiBsb3dlcmNhc2U7Ij5zZWxpbmRlbGw8L3RleHQ+PC9zdmc+" />
+
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://esm.sh">
@@ -26,13 +35,11 @@
         overflow-x: hidden;
       }
 
-      /* 只去掉聚焦时的那层“白框/轮廓”，不影响背景 */
       input:focus, textarea:focus {
         outline: none !important;
         box-shadow: none !important;
       }
 
-      /* 氛围背景容器 - 修改为纯黑背景 */
       .bg-ambience {
         position: fixed;
         inset: 0;
@@ -118,7 +125,6 @@
     <div class="bg-ambience">
       <div class="glow-orb orb-1"></div>
       <div class="glow-orb orb-2"></div>
-      <div style="position: absolute; inset: 0; opacity: 0.03; pointer-events: none; background-image: url('https://www.transparenttextures.com/patterns/stardust.png');"></div>
     </div>
 
     <div id="initial-loader">
@@ -130,6 +136,17 @@
     <script type="module" src="/index.tsx"></script>
 
     <script>
+      // 注册 Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('SW registered: ', registration);
+          }).catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+        });
+      }
+
       window.addEventListener('load', () => {
         const loader = document.getElementById('initial-loader');
         if(loader) {

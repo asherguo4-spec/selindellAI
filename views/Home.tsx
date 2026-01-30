@@ -112,7 +112,6 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
 
   if (currentView === AppView.GENERATING) return (
     <div className="h-full flex flex-col items-center justify-center relative animate-in fade-in duration-300">
-      {/* 顶部返回按钮 */}
       <div className="absolute top-4 left-4 z-50">
         <button 
           onClick={handleCancelGeneration}
@@ -137,7 +136,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
   );
 
   return (
-    <div className="p-5 pb-32 overflow-x-hidden">
+    <div className="py-8 pb-32">
       {errorMessage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setErrorMessage(null)}></div>
@@ -154,41 +153,68 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
 
       {currentView === AppView.RESULT && lastResult ? (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{lastResult.title}</h2>
-            <button onClick={() => setView(AppView.HOME)} className="text-gray-400 p-2"><X size={24} /></button>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-4xl font-black tracking-tight">{lastResult.title}</h2>
+            <button onClick={() => setView(AppView.HOME)} className="text-gray-400 p-2 hover:bg-white/5 rounded-full transition-colors"><X size={24} /></button>
           </div>
           
-          <div className="space-y-8">
-            <div className="relative">
-              <ActionFigure3DViewer images={lastResult.imageUrls} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            {/* Left Column: Visuals */}
+            <div className="md:sticky md:top-24 space-y-6">
+              <div className="relative">
+                <ActionFigure3DViewer images={lastResult.imageUrls} />
+              </div>
+              <div className="hidden md:flex gap-4">
+                <button onClick={() => setView(AppView.HOME)} className="flex-1 h-16 rounded-[24px] border border-white/10 font-bold text-gray-400 active:scale-95 transition-all hover:bg-white/5">修改方案</button>
+                <button onClick={() => { setPendingOrder(lastResult); setView(AppView.CHECKOUT); }} className="flex-[2] h-16 rounded-[24px] bg-gradient-to-r from-purple-600 to-pink-600 shadow-[0_15px_30px_rgba(168,85,247,0.4)] flex items-center justify-center space-x-2 font-black text-lg text-white active:scale-95 transition-all">
+                  <ShoppingBag size={20} />
+                  <span>立即下单实物</span>
+                </button>
+              </div>
             </div>
             
-            {lastResult.stats && lastResult.lore && (
-              <StatsCard stats={lastResult.stats} lore={lastResult.lore} />
-            )}
-            
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <button onClick={() => setView(AppView.HOME)} className="h-16 rounded-[24px] border border-white/10 font-bold text-gray-400 active:scale-95 transition-all">修改方案</button>
-              <button onClick={() => { setPendingOrder(lastResult); setView(AppView.CHECKOUT); }} className="h-16 rounded-[24px] bg-gradient-to-r from-purple-600 to-pink-600 shadow-[0_15px_30px_rgba(168,85,247,0.4)] flex items-center justify-center space-x-2 font-black text-lg text-white active:scale-95 transition-all">
-                <ShoppingBag size={20} />
-                <span>下单实物</span>
-              </button>
+            {/* Right Column: Details */}
+            <div className="space-y-8">
+              {lastResult.stats && lastResult.lore && (
+                <StatsCard stats={lastResult.stats} lore={lastResult.lore} />
+              )}
+              
+              <div className="md:hidden grid grid-cols-2 gap-4 pt-4">
+                <button onClick={() => setView(AppView.HOME)} className="h-16 rounded-[24px] border border-white/10 font-bold text-gray-400 active:scale-95 transition-all">修改方案</button>
+                <button onClick={() => { setPendingOrder(lastResult); setView(AppView.CHECKOUT); }} className="h-16 rounded-[24px] bg-gradient-to-r from-purple-600 to-pink-600 shadow-[0_15px_30px_rgba(168,85,247,0.4)] flex items-center justify-center space-x-2 font-black text-lg text-white active:scale-95 transition-all">
+                  <ShoppingBag size={20} />
+                  <span>下单实物</span>
+                </button>
+              </div>
+
+              <div className="p-6 glass-card rounded-[28px] border-white/5">
+                <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-4">造物参数</h4>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-1">
+                    <span className="text-gray-600 font-bold">风格</span>
+                    <p className="text-white font-medium">{lastResult.style}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-gray-600 font-bold">时间</span>
+                    <p className="text-white font-medium">{new Date(lastResult.timestamp).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="animate-in fade-in duration-500">
-          <div className="mt-2 mb-8 text-center relative">
-            <div className="inline-block mb-3 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
+        <div className="animate-in fade-in duration-500 max-w-4xl mx-auto">
+          <div className="mt-2 mb-12 text-center relative">
+            <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20">
               <span className="text-xs font-black tracking-[0.2em] text-purple-400 uppercase">人人都是造物主</span>
             </div>
-            <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Selindell <span className="text-purple-500">造物</span></h1>
-            <p className="text-gray-400 text-sm font-medium">输入灵感，生成属于你的专属手办</p>
+            <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-tight">Selindell <span className="text-purple-500">造物</span></h1>
+            <p className="text-gray-400 text-sm md:text-base font-medium max-w-lg mx-auto">输入灵感，定制你的专属艺术手办</p>
           </div>
 
-          <div className="relative mb-8">
-             <div className="flex items-center justify-between mb-3 px-1">
+          <div className="relative mb-12">
+             <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center space-x-2 text-gray-500">
                   <Info size={12} />
                   <span className="text-[10px] font-bold uppercase tracking-widest">描述越具体，生成效果越惊艳</span>
@@ -198,22 +224,22 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
                 </span>
              </div>
 
-             <div className="glass-card rounded-[32px] p-6 relative border-white/10 bg-white/[0.02] shadow-inner focus-within:border-purple-500/40 transition-all duration-500">
+             <div className="glass-card rounded-[32px] p-8 relative border-white/10 bg-white/[0.02] shadow-inner focus-within:border-purple-500/40 transition-all duration-500">
                 <textarea
-                  className="w-full bg-transparent border-none focus:ring-0 text-xl font-medium placeholder:text-white/10 h-40 resize-none text-white leading-relaxed no-scrollbar"
+                  className="w-full bg-transparent border-none focus:ring-0 text-xl md:text-2xl font-medium placeholder:text-white/10 h-48 md:h-56 resize-none text-white leading-relaxed no-scrollbar"
                   placeholder="例如：一只在霓虹都市中滑板的小熊猫..."
                   value={prompt}
                   maxLength={500}
                   onChange={(e) => setPrompt(e.target.value)}
                 />
                 
-                <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between">
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                <div className="absolute bottom-6 left-8 right-8 flex items-center justify-between">
+                  <div className="hidden sm:flex gap-2 overflow-x-auto no-scrollbar py-1">
                     {SAMPLE_PROMPTS.map((sample, i) => (
                       <button 
                         key={i}
                         onClick={() => setPrompt(sample)}
-                        className="whitespace-nowrap px-3 py-1 rounded-lg bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                        className="whitespace-nowrap px-4 py-1.5 rounded-xl bg-white/5 text-[10px] text-gray-500 border border-white/5 hover:bg-white/10 hover:text-white transition-all active:scale-95"
                       >
                         {sample}
                       </button>
@@ -222,71 +248,71 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
                   <button
                     onClick={handleExpandPrompt}
                     disabled={!prompt.trim() || isExpanding}
-                    className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-purple-500/10 text-purple-400 active:scale-95 disabled:opacity-30 border border-purple-500/20 transition-all shadow-lg shrink-0 ml-2"
+                    className="flex items-center space-x-2 px-6 py-2.5 rounded-full bg-purple-500/10 text-purple-400 active:scale-95 disabled:opacity-30 border border-purple-500/20 transition-all shadow-lg shrink-0 ml-auto"
                   >
-                    {isExpanding ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
-                    <span className="text-xs font-bold">{isExpanding ? '扩写中...' : '灵感增强'}</span>
+                    {isExpanding ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                    <span className="text-sm font-bold">{isExpanding ? '扩写中...' : '灵感增强'}</span>
                   </button>
                 </div>
              </div>
 
-             {/* AI 补写对比预览 */}
              {expandedPreview && (
-                <div className="mt-4 p-5 glass-card rounded-3xl border-purple-500/30 bg-purple-500/5 animate-in slide-in-from-top-4 duration-500 relative">
-                   <div className="flex items-center justify-between mb-3">
+                <div className="mt-6 p-6 glass-card rounded-[32px] border-purple-500/30 bg-purple-500/5 animate-in slide-in-from-top-4 duration-500 relative">
+                   <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2 text-purple-400">
-                        <Sparkles size={14} />
+                        <Sparkles size={16} />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI 增强建议</span>
                       </div>
-                      <button onClick={() => setExpandedPreview(null)} className="text-gray-600 hover:text-white transition-colors">
-                        <X size={14} />
+                      <button onClick={() => setExpandedPreview(null)} className="text-gray-600 hover:text-white transition-colors p-1">
+                        <X size={16} />
                       </button>
                    </div>
-                   <p className="text-sm text-gray-300 leading-relaxed mb-4 italic">"{expandedPreview}"</p>
-                   <div className="flex gap-3">
+                   <p className="text-base md:text-lg text-gray-300 leading-relaxed mb-6 italic">"{expandedPreview}"</p>
+                   <div className="flex gap-4">
                       <button 
                         onClick={acceptExpansion}
-                        className="flex-1 h-10 rounded-xl bg-purple-500 text-white text-xs font-bold flex items-center justify-center space-x-2 active:scale-95 transition-all"
+                        className="flex-1 h-12 rounded-2xl bg-purple-500 text-white text-sm font-black flex items-center justify-center space-x-2 active:scale-95 transition-all shadow-lg shadow-purple-500/20"
                       >
-                        <Check size={14} />
-                        <span>采纳并继续编辑</span>
+                        <Check size={16} />
+                        <span>采纳建议</span>
                       </button>
                       <button 
                         onClick={() => setExpandedPreview(null)}
-                        className="px-4 h-10 rounded-xl bg-white/5 text-gray-400 text-xs font-bold flex items-center justify-center space-x-2 active:scale-95 transition-all"
+                        className="px-6 h-12 rounded-2xl bg-white/5 text-gray-400 text-sm font-bold flex items-center justify-center space-x-2 active:scale-95 transition-all"
                       >
-                        <RotateCcw size={14} />
-                        <span>保留原句</span>
+                        <span>放弃</span>
                       </button>
                    </div>
                 </div>
              )}
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-5 px-1">材质风格系统</h3>
-            <div className="grid grid-cols-5 gap-3">
+          <div className="mb-12">
+            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 px-1">材质风格系统</h3>
+            {/* 改进后的布局：移动端横向滑动，桌面端矩阵 */}
+            <div className="flex overflow-x-auto no-scrollbar -mx-4 px-4 pb-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-5 gap-4">
               {CREATION_STYLES.map((style) => {
                 const isSelected = selectedStyleId === style.id;
                 return (
                   <button
                     key={style.id}
                     onClick={() => setSelectedStyleId(style.id)}
-                    className={`group relative flex flex-col items-center transition-all duration-500 ${isSelected ? 'scale-105' : 'hover:scale-105'}`}
+                    className={`flex-none w-[28%] sm:w-auto group relative flex flex-col items-center transition-all duration-500 ${isSelected ? 'scale-105' : 'hover:scale-105'}`}
                   >
-                    <div className={`w-full aspect-square rounded-2xl overflow-hidden mb-2 border-2 transition-all duration-500 relative ${
+                    <div className={`w-full aspect-square rounded-2xl md:rounded-3xl overflow-hidden mb-3 border-2 transition-all duration-500 relative ${
                       isSelected 
-                      ? 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.5)]' 
+                      ? 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)]' 
                       : 'border-white/5 opacity-40 group-hover:opacity-100 group-hover:border-white/20'
                     }`}>
                       <img src={style.imageUrl} className="w-full h-full object-cover" alt={style.name} />
                       {isSelected && (
                         <div className="absolute inset-0 bg-purple-500/10 flex items-center justify-center">
-                          <Check size={20} className="text-white drop-shadow-lg" />
+                          <Check size={24} className="text-white drop-shadow-lg md:hidden" />
+                          <Check size={28} className="text-white drop-shadow-lg hidden md:block" />
                         </div>
                       )}
                     </div>
-                    <p className={`text-[9px] font-black text-center tracking-tighter transition-all duration-300 ${isSelected ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'}`}>
+                    <p className={`text-[9px] md:text-xs font-black text-center tracking-tighter transition-all duration-300 ${isSelected ? 'text-purple-400' : 'text-gray-600 group-hover:text-gray-400'}`}>
                       {style.name}
                     </p>
                   </button>
@@ -298,13 +324,13 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
           <button
             onClick={handleGenerateClick}
             disabled={!prompt.trim() || isGenerating}
-            className={`w-full h-20 rounded-[32px] flex items-center justify-center space-x-4 font-black text-xl transition-all shadow-2xl relative overflow-hidden group ${
+            className={`w-full h-24 rounded-[40px] flex items-center justify-center space-x-4 font-black text-xl md:text-2xl transition-all shadow-2xl relative overflow-hidden group ${
               prompt.trim() && !isGenerating ? 'purple-gradient text-white active:scale-95' : 'bg-white/5 text-gray-600 cursor-not-allowed'
             }`}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 -translate-x-full group-hover:animate-[shimmer_2s_infinite]"></div>
-            {isGenerating ? <Loader2 className="animate-spin" size={24} /> : <Sparkles size={24} className={prompt.trim() ? "animate-pulse" : ""} />}
-            <span className="relative z-10">{isGenerating ? '正在为你造物...' : '开始铸造我的专属手办'}</span>
+            {isGenerating ? <Loader2 className="animate-spin" size={28} /> : <Sparkles size={28} className={prompt.trim() ? "animate-pulse" : ""} />}
+            <span className="relative z-10">{isGenerating ? '正在为你造物...' : '铸造我的专属手办'}</span>
           </button>
         </div>
       )}
