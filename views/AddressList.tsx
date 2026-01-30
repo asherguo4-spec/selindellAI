@@ -5,7 +5,8 @@ import { Address } from '../types';
 
 interface AddressListProps {
   addresses: Address[];
-  onAddAddress: (address: Omit<Address, 'id' | 'isDefault'>) => void;
+  // Adjusted parameter type to match addAddress in App.tsx (Omit id, isDefault, and userId)
+  onAddAddress: (address: Omit<Address, 'id' | 'isDefault' | 'userId'>) => void;
   onDeleteAddress: (id: string) => void;
   onBack: () => void;
 }
@@ -26,6 +27,7 @@ const AddressList: React.FC<AddressListProps> = ({ addresses, onAddAddress, onDe
     if (!/^1[3-9]\d{9}$/.test(formData.phone.trim())) { setErrorHint("手机号码格式不正确"); return; }
     if (!formData.location.trim()) { setErrorHint("请输入详细收货地址"); return; }
     
+    // Now formData matches Omit<Address, 'id' | 'isDefault' | 'userId'>
     onAddAddress(formData);
     setFormData({ name: '', phone: '', location: '' });
     setErrorHint(null);

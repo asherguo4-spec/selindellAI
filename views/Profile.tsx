@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, AlertTriangle, Sparkles, UserPlus, Info, Crown, Gem, BadgeCheck, Hash, Copy } from 'lucide-react';
+import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, AlertTriangle, Sparkles, UserPlus, Info, Crown, Gem, BadgeCheck, Copy } from 'lucide-react';
 import { AppView, UserProfile } from '../types.ts';
 
 interface ProfileProps {
@@ -80,7 +80,6 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               {isElite && <Gem size={16} className="text-purple-400 animate-pulse" />}
             </div>
             
-            {/* 这里的 Short ID 展示要非常醒目，让用户产生“这就是我的 ID”的错觉 */}
             <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/5">
               <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
                 ID: {userProfile.shortId}
@@ -165,11 +164,21 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
           </button>
         )}
 
-        <div className="flex items-center justify-center space-x-2 mt-4 opacity-20">
-          <Info size={8} className="text-gray-500" />
-          <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
-            Build: 2026.01.28-v5.recovery_ready
-          </span>
+        {/* About Us - Discreet Link */}
+        <div className="flex flex-col items-center justify-center mt-4 space-y-4">
+          <button 
+            onClick={() => setView(AppView.ABOUT_US)}
+            className="text-[10px] font-black text-gray-700 uppercase tracking-[0.2em] hover:text-purple-400 transition-colors"
+          >
+            关于我们
+          </button>
+          
+          <div className="flex items-center justify-center space-x-2 opacity-20">
+            <Info size={8} className="text-gray-500" />
+            <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
+              Build: 2026.01.28-v6.跃壹知品
+            </span>
+          </div>
         </div>
       </div>
 

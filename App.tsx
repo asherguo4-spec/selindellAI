@@ -10,7 +10,8 @@ import AddressList from './views/AddressList.tsx';
 import CustomerService from './views/CustomerService.tsx';
 import SettingsView from './views/Settings.tsx';
 import Register from './views/Register.tsx';
-import { supabase } from './lib/supabase.ts';
+import AboutUs from './views/AboutUs.tsx';
+import { supabase, logAction } from './lib/supabase.ts';
 import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -42,9 +43,13 @@ const App: React.FC = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleAuthChange(session);
-    });
+    // 立即检查现有会话以实现无感恢复
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      await handleAuthChange(session);
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       handleAuthChange(session);
@@ -123,6 +128,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    if (userId) await logAction(userId, 'LOGOUT');
     await supabase.auth.signOut();
     setCurrentView(AppView.PROFILE);
   };
@@ -193,7 +199,7 @@ const App: React.FC = () => {
       case AppView.HOME:
       case AppView.GENERATING:
       case AppView.RESULT:
-        return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
+        return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} userId={userId} />;
       case AppView.CHECKOUT:
         return pendingOrder && userId ? <Checkout userId={userId} creation={pendingOrder} addresses={addresses} onPaymentComplete={handlePaymentComplete} onBack={() => setCurrentView(AppView.RESULT)} /> : null;
       case AppView.ORDERS:
@@ -206,7 +212,9 @@ const App: React.FC = () => {
         return <CustomerService userId={userId || ''} onBack={() => setCurrentView(AppView.PROFILE)} />;
       case AppView.SETTINGS:
         return userId ? <SettingsView userId={userId} profile={userProfile} onUpdate={handleProfileUpdate} onBack={() => setCurrentView(AppView.PROFILE)} /> : null;
-      default: return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} />;
+      case AppView.ABOUT_US:
+        return <AboutUs onBack={() => setCurrentView(AppView.PROFILE)} />;
+      default: return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} userId={userId} />;
     }
   };
 
@@ -216,14 +224,14 @@ const App: React.FC = () => {
     AppView.ADDRESS_LIST, 
     AppView.CUSTOMER_SERVICE,
     AppView.SETTINGS,
-    AppView.REGISTER
+    AppView.REGISTER,
+    AppView.ABOUT_US
   ].includes(currentView);
 
   return (
     <div className="min-h-[100dvh] bg-transparent relative flex flex-col items-center">
-      {/* Dynamic wrapper that responds to screen size */}
       <div className="w-full max-w-6xl flex flex-col min-h-[100dvh] relative overflow-x-hidden">
-        {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER].includes(currentView) && (
+        {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER, AppView.ABOUT_US].includes(currentView) && (
           <header className="h-16 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
             <div className="flex items-center space-x-2.5">
                <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>

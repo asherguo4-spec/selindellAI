@@ -39,7 +39,7 @@ export const supabase = (() => {
     console.warn("Supabase 配置不可用，进入本地模式。");
     return {
       from: () => ({
-        select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }),
+        select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [], error: null }), single: () => Promise.resolve({ data: null, error: null }) }) }),
         upsert: () => Promise.resolve({ error: null }),
         insert: () => ({ select: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
         delete: () => ({ eq: () => Promise.resolve({ error: null }) })
@@ -49,3 +49,17 @@ export const supabase = (() => {
 })();
 
 export const isSupabaseConfigured = () => SUPABASE_ANON_KEY.length > 50;
+
+// Added logAction to record user activities in Supabase or handle failures gracefully.
+export const logAction = async (userId: string, action: string, details?: any) => {
+  try {
+    await supabase.from('logs').insert([{
+      user_id: userId,
+      action,
+      details,
+      created_at: new Date().toISOString()
+    }]);
+  } catch (e) {
+    console.debug('Log action skipped', e);
+  }
+};

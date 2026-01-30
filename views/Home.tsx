@@ -13,6 +13,8 @@ interface HomeProps {
   setView: (view: AppView) => void;
   onCreationSuccess: (creation: GeneratedCreation) => void;
   setPendingOrder: (creation: GeneratedCreation) => void;
+  // Added userId to fix prop mismatch in App.tsx
+  userId?: string | null;
 }
 
 const SAMPLE_PROMPTS = [
@@ -22,7 +24,7 @@ const SAMPLE_PROMPTS = [
   "赛博霓虹风格的极地白熊"
 ];
 
-const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, setPendingOrder }) => {
+const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, setPendingOrder, userId }) => {
   const [prompt, setPrompt] = useState('');
   const [selectedStyleId, setSelectedStyleId] = useState(CREATION_STYLES[0].id);
   const [lastResult, setLastResult] = useState<GeneratedCreation | null>(null);
@@ -210,7 +212,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
               <span className="text-xs font-black tracking-[0.2em] text-purple-400 uppercase">人人都是造物主</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-tight">Selindell <span className="text-purple-500">造物</span></h1>
-            <p className="text-gray-400 text-sm md:text-base font-medium max-w-lg mx-auto">输入灵感，定制你的专属艺术手办</p>
+            <p className="text-gray-400 text-sm md:text-base font-medium max-w-lg mx-auto">只需一句话，我们将您的无限灵感转化为独一无二的专属艺术手办</p>
           </div>
 
           <div className="relative mb-12">
@@ -301,7 +303,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
                   >
                     <div className={`w-full aspect-square rounded-2xl md:rounded-3xl overflow-hidden mb-3 border-2 transition-all duration-500 relative ${
                       isSelected 
-                      ? 'border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.3)]' 
+                      ? 'border-purple-500 shadow-[0_0_20_rgba(168,85,247,0.3)]' 
                       : 'border-white/5 opacity-40 group-hover:opacity-100 group-hover:border-white/20'
                     }`}>
                       <img src={style.imageUrl} className="w-full h-full object-cover" alt={style.name} />

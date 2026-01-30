@@ -10,7 +10,8 @@ export enum AppView {
   ADDRESS_LIST = 'address_list',
   CUSTOMER_SERVICE = 'customer_service',
   SETTINGS = 'settings',
-  REGISTER = 'register'
+  REGISTER = 'register',
+  ABOUT_US = 'about_us'
 }
 
 export interface CreationStyle {
