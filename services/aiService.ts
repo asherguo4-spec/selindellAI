@@ -17,6 +17,7 @@ const getEnvVar = (name: string): string => {
 
 export class SelindellAIService {
   private getApiKey(): string {
+    // 核心 API KEY
     return getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
   }
 
@@ -44,7 +45,7 @@ export class SelindellAIService {
 
   /**
    * 生图逻辑：切换至 Gemini 2.5 Flash Image
-   * 解决了由于 CORS 限制导致的 "Failed to fetch" 问题
+   * 针对移动端环境优化了错误捕获
    */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
     console.log("🚀 Starting Gemini Image Generation...");
@@ -88,12 +89,15 @@ export class SelindellAIService {
     } catch (error: any) {
       console.error("🚨 Detailed Gen Error:", error);
       
-      if (error.message?.includes('403') || error.message?.includes('API_KEY_INVALID')) {
-        throw new Error("授权失败：API Key 可能已失效，请检查部署设置中的 API_KEY。");
+      const errMsg = error?.toString() || "";
+      
+      // 专门捕获 iOS/Safari 常见的网络失败错误
+      if (errMsg.includes('Load failed') || errMsg.includes('fetch') || errMsg.includes('NetworkError')) {
+        throw new Error("网络握手失败 (Load failed)。\n由于生图引擎位于海外服务器，移动端请确保：\n1. 您的网络环境允许访问 Google API (建议检查代理或科学上网状态)\n2. 手机未开启强力广告拦截插件\n3. 尝试切换 WiFi 或 5G 网络。");
       }
       
-      if (error.message?.includes('fetch')) {
-        throw new Error("网络请求被拦截 (Failed to fetch)。建议：\n1. 关闭浏览器广告拦截插件 (AdBlock)\n2. 检查网络是否允许访问 Google API 服务\n3. 尝试使用手机热点或其他网络环境。");
+      if (errMsg.includes('403') || errMsg.includes('API_KEY_INVALID')) {
+        throw new Error("授权失败：API Key 校验未通过，请联系管理员更新。");
       }
       
       throw new Error(error.message || "造物引擎暂时无法响应，请稍后再试。");

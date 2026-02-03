@@ -43,7 +43,6 @@ const App: React.FC = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
-    // 立即检查现有会话以实现无感恢复
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       await handleAuthChange(session);
@@ -124,7 +123,12 @@ const App: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleAuthChange(session);
     });
-    setCurrentView(AppView.PROFILE);
+    // 登录成功后，如果刚才有待处理订单，回到结果页让用户再次点击下单
+    if (pendingOrder) {
+      setCurrentView(AppView.RESULT);
+    } else {
+      setCurrentView(AppView.PROFILE);
+    }
   };
 
   const handleLogout = async () => {
@@ -201,7 +205,21 @@ const App: React.FC = () => {
       case AppView.RESULT:
         return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} userId={userId} />;
       case AppView.CHECKOUT:
-        return pendingOrder && userId ? <Checkout userId={userId} creation={pendingOrder} addresses={addresses} onPaymentComplete={handlePaymentComplete} onBack={() => setCurrentView(AppView.RESULT)} /> : null;
+        // 核心修复逻辑：如果没有登录，展示登录页而不是黑屏
+        if (!userId) {
+          return <Register onRegisterSuccess={handleRegisterSuccess} onBack={() => setCurrentView(AppView.RESULT)} />;
+        }
+        return pendingOrder ? (
+          <Checkout 
+            userId={userId} 
+            creation={pendingOrder} 
+            addresses={addresses} 
+            onPaymentComplete={handlePaymentComplete} 
+            onBack={() => setCurrentView(AppView.RESULT)} 
+          />
+        ) : (
+          <Home currentView={AppView.HOME} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} userId={userId} />
+        );
       case AppView.ORDERS:
         return <Orders userId={userId || ''} creations={myCreations} setView={setCurrentView} />;
       case AppView.PROFILE:

@@ -13,7 +13,6 @@ interface HomeProps {
   setView: (view: AppView) => void;
   onCreationSuccess: (creation: GeneratedCreation) => void;
   setPendingOrder: (creation: GeneratedCreation) => void;
-  // Added userId to fix prop mismatch in App.tsx
   userId?: string | null;
 }
 
@@ -113,7 +112,7 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
   };
 
   if (currentView === AppView.GENERATING) return (
-    <div className="h-full flex flex-col items-center justify-center relative animate-in fade-in duration-300">
+    <div className="h-full flex flex-col items-center justify-center relative bg-black">
       <div className="absolute top-4 left-4 z-50">
         <button 
           onClick={handleCancelGeneration}
@@ -123,17 +122,8 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
         </button>
       </div>
 
-      <LoadingAnimation />
-      
-      {showSlowNetworkHint && (
-        <div className="absolute bottom-32 px-10 text-center animate-in fade-in slide-in-from-bottom-2 duration-700">
-          <div className="flex items-center justify-center space-x-2 text-purple-400/60 mb-2">
-            <Clock size={12} className="animate-spin" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Deep Thinking</span>
-          </div>
-          <p className="text-gray-500 text-xs">AI 引擎正在深度构思细节，当前网络略显拥挤，请再稍等片刻...</p>
-        </div>
-      )}
+      {/* 现在提示文字已经整合进组件内部，采用 Flex 布局，不会再重叠 */}
+      <LoadingAnimation showHint={showSlowNetworkHint} />
     </div>
   );
 
@@ -161,7 +151,6 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
-            {/* Left Column: Visuals */}
             <div className="md:sticky md:top-24 space-y-6">
               <div className="relative">
                 <ActionFigure3DViewer images={lastResult.imageUrls} />
@@ -175,7 +164,6 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
               </div>
             </div>
             
-            {/* Right Column: Details */}
             <div className="space-y-8">
               {lastResult.stats && lastResult.lore && (
                 <StatsCard stats={lastResult.stats} lore={lastResult.lore} />
@@ -291,7 +279,6 @@ const Home: React.FC<HomeProps> = ({ currentView, setView, onCreationSuccess, se
 
           <div className="mb-12">
             <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 px-1">材质风格系统</h3>
-            {/* 改进后的布局：移动端横向滑动，桌面端矩阵 */}
             <div className="flex overflow-x-auto no-scrollbar -mx-4 px-4 pb-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-5 gap-4">
               {CREATION_STYLES.map((style) => {
                 const isSelected = selectedStyleId === style.id;
