@@ -4,33 +4,27 @@ import { GoogleGenAI, Type } from "@google/genai";
 // 辅助函数：从各种可能的地方获取环境变量
 const getEnvVar = (name: string): string => {
   try {
-    // 检查 Vite 注入的 process.env
-    const fromProcess = (process.env as any)[name];
-    if (fromProcess && typeof fromProcess === 'string' && !fromProcess.includes('{{') && fromProcess.trim().length > 0) {
-      return fromProcess.trim();
-    }
-
-    // 检查 Vite 标准的 import.meta.env
-    const fromMeta = (import.meta as any).env?.[`VITE_${name}`];
-    if (fromMeta && typeof fromMeta === 'string' && fromMeta.trim().length > 0) {
-      return fromMeta.trim();
+    // 优先从环境变量中读取
+    const val = (process.env as any)[name] || (import.meta as any).env?.[`VITE_${name}`];
+    if (val && typeof val === 'string' && !val.includes('{{') && val.trim().length > 0) {
+      return val.trim();
     }
   } catch (e) {
     console.warn(`Error reading env var ${name}:`, e);
   }
-
   return "";
 };
 
 export class SelindellAIService {
-  constructor() {}
+  private getApiKey(): string {
+    return getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
+  }
 
   /**
    * 灵感增强 (使用 Gemini 3.0 Flash)
    */
   async expandPrompt(prompt: string): Promise<string> {
-    const apiKey = getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
-    
+    const apiKey = this.getApiKey();
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
@@ -49,71 +43,66 @@ export class SelindellAIService {
   }
 
   /**
-   * 生图逻辑：正式迁移至腾讯混元 (OpenAI 兼容接口)
+   * 生图逻辑：切换至 Gemini 2.5 Flash Image
+   * 解决了由于 CORS 限制导致的 "Failed to fetch" 问题
    */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    console.log("🚀 Starting Hunyuan Generation...");
-    
-    // 优先读取环境变量
-    let apiKey = getEnvVar('HUNYUAN_API_KEY');
-    
-    // 兜底逻辑：如果环境变量无效，使用您最新生成的那个 Key
-    if (!apiKey || apiKey.length < 15 || apiKey.includes('placeholder')) {
-      console.log("💡 Using fallback hardcoded API Key: sk-PgFU...");
-      apiKey = "sk-PgFUd1LKMRkTukKRodzIR6qhdwoRx3vBa29p2VvzzycuWOYC";
-    }
+    console.log("🚀 Starting Gemini Image Generation...");
+    const apiKey = this.getApiKey();
+    const ai = new GoogleGenAI({ apiKey });
 
-    const endpoint = "https://api.hunyuan.cloud.tencent.com/v1/images/generations";
-    const finalPrompt = `(纯白背景), 精致物理手办, ${prompt}, ${styleSuffix}, 3D打印材质, 极高分辨率, 细腻建模, 工作室打光, 4k`;
+    // 组合最终提示词
+    const finalPrompt = `(white background), exquisite physical action figure, ${prompt}, ${styleSuffix}, 3d printed material, high resolution, detailed modeling, studio lighting, 4k`;
 
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        mode: 'cors', // 明确开启 CORS 模式
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: "hunyuan-t2i",
-          prompt: finalPrompt,
-          n: 1,
-          size: "1024x1024",
-          response_format: "b64_json"
-        })
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [{
+          parts: [{ text: finalPrompt }]
+        }],
+        config: {
+          imageConfig: {
+            aspectRatio: "1:1"
+          }
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Hunyuan API Error Status:", response.status, errorData);
-        throw new Error(errorData.error?.message || `API 请求失败 (状态码: ${response.status})。可能是欠费或 Key 被禁。`);
+      const images: string[] = [];
+      
+      // 遍历所有 candidate 的 parts，提取 inlineData 中的图片数据
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData) {
+            images.push(`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
+          }
+        }
       }
 
-      const result = await response.json();
-      
-      const b64Data = result.data?.[0]?.b64_json;
-      if (!b64Data) {
-        console.error("❌ Hunyuan API Empty Response:", result);
-        throw new Error("混元造物失败，生成的图像为空。请尝试更换灵感词（如：穿西装的猫）。");
+      if (images.length === 0) {
+        console.error("❌ Gemini Image Response empty parts:", response);
+        throw new Error("造物失败：AI 未返回图像数据。请尝试更换灵感词。");
       }
-      
-      console.log("✅ Hunyuan Image Generated Successfully!");
-      return [`data:image/png;base64,${b64Data}`]; 
+
+      console.log("✅ Gemini Image Generated Successfully!");
+      return images;
     } catch (error: any) {
       console.error("🚨 Detailed Gen Error:", error);
       
-      // 特殊处理 "Failed to fetch" 这种网络层错误
-      if (error.name === 'TypeError' || error.message.includes('fetch')) {
-        throw new Error("网络连接失败 (Failed to fetch)。\n常见原因：\n1. 浏览器插件拦截（如 AdBlock）\n2. 网络环境防火墙限制\n3. 跨域策略拦截。请尝试更换网络或使用隐身模式打开页面。");
+      if (error.message?.includes('403') || error.message?.includes('API_KEY_INVALID')) {
+        throw new Error("授权失败：API Key 可能已失效，请检查部署设置中的 API_KEY。");
       }
       
-      throw new Error(error.message || "混元造物引擎异常，请检查网络状况。");
+      if (error.message?.includes('fetch')) {
+        throw new Error("网络请求被拦截 (Failed to fetch)。建议：\n1. 关闭浏览器广告拦截插件 (AdBlock)\n2. 检查网络是否允许访问 Google API 服务\n3. 尝试使用手机热点或其他网络环境。");
+      }
+      
+      throw new Error(error.message || "造物引擎暂时无法响应，请稍后再试。");
     }
   }
 
   async generateLoreAndStats(prompt: string) {
     try {
-      const apiKey = getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
+      const apiKey = this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
