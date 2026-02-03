@@ -1,135 +1,123 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-export class SelindellAIService {
-  // 智谱保底 Key (仅当环境变量完全缺失时使用)
-  private readonly ZHIPU_STABLE_KEY = "08a05cfe50f44549947f6e1a5cb232fa.wqGlh7yjmT1WOR5S";
-
-  constructor() {}
-
-  private async createZhipuToken(): Promise<string> {
-    const targetKey = (process.env.ZHIPU_API_KEY || this.ZHIPU_STABLE_KEY).trim();
-    if (!targetKey.includes('.')) {
-      throw new Error("智谱 API KEY 格式错误，请检查 .env 中的 ZHIPU_API_KEY");
+// 辅助函数：从各种可能的地方获取环境变量
+const getEnvVar = (name: string): string => {
+  try {
+    // 检查 Vite 注入的 process.env
+    const fromProcess = (process.env as any)[name];
+    if (fromProcess && typeof fromProcess === 'string' && !fromProcess.includes('{{') && fromProcess.trim().length > 0) {
+      return fromProcess.trim();
     }
 
-    const parts = targetKey.split('.');
-    const id = parts[0];
-    const secret = parts[1];
-    
-    const header = { alg: "HS256", sign_type: "SIGN" };
-    const payload = { 
-      api_key: id, 
-      exp: Math.floor(Date.now() / 1000) + 3600, 
-      iat: Math.floor(Date.now() / 1000) 
-    };
-
-    const encode = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-    const unsignedToken = `${encode(header)}.${encode(payload)}`;
-    
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(secret);
-    const dataData = encoder.encode(unsignedToken);
-    const cryptoKey = await window.crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    const signature = await window.crypto.subtle.sign("HMAC", cryptoKey, dataData);
-    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-    
-    return `${unsignedToken}.${signatureBase64}`;
+    // 检查 Vite 标准的 import.meta.env
+    const fromMeta = (import.meta as any).env?.[`VITE_${name}`];
+    if (fromMeta && typeof fromMeta === 'string' && fromMeta.trim().length > 0) {
+      return fromMeta.trim();
+    }
+  } catch (e) {
+    console.warn(`Error reading env var ${name}:`, e);
   }
 
+  return "";
+};
+
+export class SelindellAIService {
+  constructor() {}
+
   /**
-   * 灵感增强：仅在点击按钮时触发
-   * 要求：30字内，核心词位置灵活（句首/句中/句末）
+   * 灵感增强 (使用 Gemini 3.0 Flash)
    */
   async expandPrompt(prompt: string): Promise<string> {
-    if (!process.env.API_KEY || process.env.API_KEY.includes('.')) {
-      throw new Error("未检测到有效的 Gemini 密钥 (API_KEY)。");
-    }
-
+    const apiKey = getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
+    
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `你是一位世界顶级的手办概念设计师。请将用户的原始灵感 “${prompt}” 扩写成一段充满想象力和细节的手办描述。
+        contents: `你是一位顶级手办概念设计师。请将用户的灵感 “${prompt}” 扩写成一段充满细节的手办设计描述。
         要求：
-        1. 必须保留用户原始输入的主体。
-        2. 核心词可以自然地出现在句子的开头、中间或末尾，不要死板。
-        3. 字数严格限制在 30 字以内。
-        4. 语言要富有画面感（如动态、神态、光影感）。
-        5. 只返回扩写后的简体中文文本。`,
+        1. 强调姿态、面部表情、材质细节（如透明树脂、磨砂金属）。
+        2. 字数在 40 字左右。
+        3. 只返回纯中文描述文本，不要带任何前缀。`,
       });
       return response.text?.trim() || prompt;
     } catch (e: any) {
       console.error("Expand Error:", e);
-      throw new Error("灵感增强失败，请检查网络连接。");
+      return prompt; 
     }
   }
 
   /**
-   * 生图逻辑：完全使用智谱，紧扣输入框内容
-   * 强化：白色背景、材质风格严格应用、物理手办质感
+   * 生图逻辑：正式迁移至腾讯混元 (OpenAI 兼容接口)
    */
   async generate360Creation(prompt: string, styleSuffix: string): Promise<string[]> {
-    let translatedPrompt = prompt;
+    console.log("🚀 Starting Hunyuan Generation...");
     
-    // 内部静默翻译：确保智谱能更好地理解描述的主体，并转化为高质量提示词
-    try {
-      if (process.env.API_KEY && !process.env.API_KEY.includes('.')) {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: `Translate the following action figure description into a high-quality, professional English image prompt. 
-          Text: "${prompt}"
-          Focus on capturing the core subject and physical 3D attributes.`,
-        });
-        translatedPrompt = response.text?.trim() || prompt;
-      }
-    } catch (e) {
-      // 翻译失败降级使用原句
+    // 优先读取环境变量
+    let apiKey = getEnvVar('HUNYUAN_API_KEY');
+    
+    // 兜底逻辑：如果环境变量无效，使用您最新生成的那个 Key
+    if (!apiKey || apiKey.length < 15 || apiKey.includes('placeholder')) {
+      console.log("💡 Using fallback hardcoded API Key: sk-PgFU...");
+      apiKey = "sk-PgFUd1LKMRkTukKRodzIR6qhdwoRx3vBa29p2VvzzycuWOYC";
     }
 
-    const token = await this.createZhipuToken();
-    
-    /**
-     * 核心生图指令构造：
-     * 1. 权重最高的纯白背景 (Pure white background)
-     * 2. 紧扣用户输入主体 (translatedPrompt)
-     * 3. 严格遵循用户选择的材质风格 (styleSuffix)
-     * 4. 强制 3D 打印物理手办质感 (Physical action figure, realistic textures, 3D printable model)
-     */
-    const finalPrompt = `(Pure white background:1.8), realistic physical action figure of ${translatedPrompt}, ${styleSuffix}, 3D printable model, studio lighting, high quality resin material, octane render, sharp details, centered composition, high-end toy photography, 8k resolution.`;
+    const endpoint = "https://api.hunyuan.cloud.tencent.com/v1/images/generations";
+    const finalPrompt = `(纯白背景), 精致物理手办, ${prompt}, ${styleSuffix}, 3D打印材质, 极高分辨率, 细腻建模, 工作室打光, 4k`;
 
     try {
-      const response = await fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`, 
-          'Content-Type': 'application/json' 
+        mode: 'cors', // 明确开启 CORS 模式
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          model: 'cogview-3-plus', 
-          prompt: finalPrompt, 
-          size: "1024x1024" 
+        body: JSON.stringify({
+          model: "hunyuan-t2i",
+          prompt: finalPrompt,
+          n: 1,
+          size: "1024x1024",
+          response_format: "b64_json"
         })
       });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ Hunyuan API Error Status:", response.status, errorData);
+        throw new Error(errorData.error?.message || `API 请求失败 (状态码: ${response.status})。可能是欠费或 Key 被禁。`);
+      }
+
       const result = await response.json();
-      if (result.error) throw new Error(result.error.message);
-      if (!result.data || !result.data[0]?.url) throw new Error("绘图服务未返回有效图片。");
       
-      return [result.data[0].url]; 
+      const b64Data = result.data?.[0]?.b64_json;
+      if (!b64Data) {
+        console.error("❌ Hunyuan API Empty Response:", result);
+        throw new Error("混元造物失败，生成的图像为空。请尝试更换灵感词（如：穿西装的猫）。");
+      }
+      
+      console.log("✅ Hunyuan Image Generated Successfully!");
+      return [`data:image/png;base64,${b64Data}`]; 
     } catch (error: any) {
-      throw new Error(error.message || "绘图引擎响应异常，请重试。");
+      console.error("🚨 Detailed Gen Error:", error);
+      
+      // 特殊处理 "Failed to fetch" 这种网络层错误
+      if (error.name === 'TypeError' || error.message.includes('fetch')) {
+        throw new Error("网络连接失败 (Failed to fetch)。\n常见原因：\n1. 浏览器插件拦截（如 AdBlock）\n2. 网络环境防火墙限制\n3. 跨域策略拦截。请尝试更换网络或使用隐身模式打开页面。");
+      }
+      
+      throw new Error(error.message || "混元造物引擎异常，请检查网络状况。");
     }
   }
 
   async generateLoreAndStats(prompt: string) {
     try {
-      if (!process.env.API_KEY || process.env.API_KEY.includes('.')) throw new Error("Skip");
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = getEnvVar('API_KEY') || "AIzaSyDrXn9l9G3_yuwYpce4UYhidMrP_ZZokhg";
+      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `根据描述 “${prompt}”，为这个手办起一个名字并写一个30字内的背景故事，包含战斗属性。`,
+        contents: `基于描述 “${prompt}”，为这个手办生成一个名称、一段富有史诗感的 30 字背景故事和战斗属性。`,
         config: { 
           responseMimeType: "application/json", 
           responseSchema: {
@@ -139,15 +127,26 @@ export class SelindellAIService {
               lore: { type: Type.STRING },
               stats: { 
                 type: Type.OBJECT, 
-                properties: { power: { type: Type.NUMBER }, agility: { type: Type.NUMBER }, soul: { type: Type.NUMBER }, rarity: { type: Type.STRING } }
+                properties: { 
+                  power: { type: Type.NUMBER }, 
+                  agility: { type: Type.NUMBER }, 
+                  soul: { type: Type.NUMBER }, 
+                  rarity: { type: Type.STRING } 
+                },
+                required: ["power", "agility", "soul", "rarity"]
               }
-            }
+            },
+            required: ["title", "lore", "stats"]
           }
         }
       });
       return JSON.parse(response.text?.trim() || "{}");
     } catch (e) {
-      return { title: "未知造物", lore: "诞生于倾谷 AI 的精密计算中。", stats: { power: 90, agility: 90, soul: 90, rarity: "SSR" } };
+      return { 
+        title: "未命名造物", 
+        lore: "来自异次元的灵感碎片，正在凝结成形。", 
+        stats: { power: 80, agility: 80, soul: 80, rarity: "R" } 
+      };
     }
   }
 }

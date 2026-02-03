@@ -13,6 +13,7 @@
           "cloudPath": "/",
           "envVariables": {
             "API_KEY": "{{env.API_KEY}}",
+            "HUNYUAN_API_KEY": "{{env.HUNYUAN_API_KEY}}",
             "SUPABASE_URL": "{{env.SUPABASE_URL}}",
             "SUPABASE_ANON_KEY": "{{env.SUPABASE_ANON_KEY}}"
           },
