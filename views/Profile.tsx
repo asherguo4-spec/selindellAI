@@ -17,47 +17,46 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
   const isElite = userProfile.level === 'elite';
 
   const levelInfo = {
-    visitor: { label: '访客造物主', icon: UserPlus, color: 'text-gray-500', bg: 'bg-white/5' },
-    creator: { label: '注册造物主', icon: Shield, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    elite: { label: '资深造物主', icon: Crown, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    visitor: { label: '访客造物主', icon: UserPlus, color: 'text-slate-400', bg: 'bg-slate-50' },
+    creator: { label: '注册造物主', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
+    elite: { label: '资深造物主', icon: Crown, color: 'text-purple-600', bg: 'bg-purple-50' },
   }[userProfile.level];
 
   const menuItems = [
     { 
       icon: MapPin, 
       label: '收货地址', 
-      color: 'text-purple-400', 
+      color: 'text-purple-600', 
       onClick: () => isGuest ? setView(AppView.REGISTER) : setView(AppView.ADDRESS_LIST) 
     },
     { 
       icon: Headphones, 
       label: '联系客服', 
-      color: 'text-purple-400', 
+      color: 'text-purple-600', 
       onClick: () => setView(AppView.CUSTOMER_SERVICE) 
     },
   ];
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-6 flex-1 overflow-y-auto no-scrollbar pb-24">
-        <div className="flex justify-between items-center mb-6">
-          <div className="w-9"></div>
-          <h2 className="text-lg font-bold">{isGuest ? '欢迎' : '个人中心'}</h2>
+      <div className="p-6 flex-1 overflow-y-auto no-scrollbar pb-32">
+        <div className="flex justify-between items-center mb-8">
+          <div className="w-10"></div>
+          <h2 className="text-lg font-black text-gray-900 tracking-tight">{isGuest ? '欢迎光临' : '私人档案'}</h2>
           {!isGuest && (
-            <button onClick={() => setView(AppView.SETTINGS)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-              <Settings size={18} />
+            <button onClick={() => setView(AppView.SETTINGS)} className="p-2.5 bg-white border border-gray-100 rounded-full transition-all shadow-sm active:scale-95">
+              <Settings size={20} className="text-slate-400" />
             </button>
           )}
-          {isGuest && <div className="w-9"></div>}
+          {isGuest && <div className="w-10"></div>}
         </div>
 
-        {/* User Card */}
-        <div className="flex flex-col items-center mb-8 text-center px-4">
-          <div className="relative mb-5">
-            <div className={`absolute -inset-2 rounded-full opacity-20 blur-xl ${isElite ? 'bg-purple-500' : 'bg-transparent'}`}></div>
+        <div className="flex flex-col items-center mb-10 text-center px-4">
+          <div className="relative mb-6">
+            <div className={`absolute -inset-3 rounded-full opacity-10 blur-2xl ${isElite ? 'bg-purple-500' : 'bg-transparent'}`}></div>
             <button 
               onClick={() => setIsAvatarZoomed(true)}
-              className={`relative w-24 h-24 rounded-full border-2 ${isGuest ? 'border-gray-700' : isElite ? 'border-purple-500' : 'border-blue-400'} p-1 shadow-2xl active:scale-95 transition-transform`}
+              className={`relative w-28 h-28 rounded-full border-4 ${isGuest ? 'border-gray-100' : isElite ? 'border-purple-600' : 'border-blue-400'} p-1.5 shadow-2xl active:scale-95 transition-transform bg-white overflow-hidden`}
             >
               <img 
                 src={userProfile.avatar} 
@@ -66,117 +65,112 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
               />
             </button>
             {!isGuest && (
-              <div className={`absolute bottom-1 right-0 w-7 h-7 ${isElite ? 'bg-purple-500' : 'bg-blue-500'} rounded-full flex items-center justify-center border-2 border-[#000]`}>
-                {isElite ? <Crown size={14} className="text-white" /> : <BadgeCheck size={14} className="text-white" />}
+              <div className={`absolute bottom-2 right-1 w-8 h-8 ${isElite ? 'bg-purple-600' : 'bg-blue-500'} rounded-full flex items-center justify-center border-4 border-white shadow-lg`}>
+                {isElite ? <Crown size={16} className="text-white" /> : <BadgeCheck size={16} className="text-white" />}
               </div>
             )}
           </div>
           
-          <div className="flex flex-col items-center mb-4">
-            <div className="flex items-center justify-center space-x-2 mb-1">
-              <h1 className={`text-2xl font-black tracking-tight ${isGuest ? 'text-gray-400' : 'text-white'}`}>
+          <div className="flex flex-col items-center mb-5">
+            <div className="flex items-center justify-center space-x-2.5 mb-2">
+              <h1 className={`text-26 font-black tracking-tight ${isGuest ? 'text-slate-300' : 'text-gray-900'}`}>
                 {userProfile.nickname}
               </h1>
-              {isElite && <Gem size={16} className="text-purple-400 animate-pulse" />}
+              {isElite && <Gem size={18} className="text-purple-500 animate-pulse" />}
             </div>
             
-            <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-white/5 border border-white/5">
-              <span className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-widest">
-                ID: {userProfile.shortId}
+            <div className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-gray-50 border border-gray-100 shadow-inner">
+              <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">
+                UID: {userProfile.shortId}
               </span>
-              <Copy size={8} className="text-gray-700" />
+              <Copy size={10} className="text-slate-300" />
             </div>
           </div>
           
-          <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-white/10 mb-5 ${levelInfo.bg}`}>
-            <levelInfo.icon size={12} className={levelInfo.color} />
+          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-transparent shadow-sm mb-6 ${levelInfo.bg}`}>
+            <levelInfo.icon size={14} className={levelInfo.color} />
             <span className={`text-[10px] font-black uppercase tracking-widest ${levelInfo.color}`}>
               {levelInfo.label}
             </span>
           </div>
           
           {userProfile.bio && (
-            <div className="relative max-w-[280px]">
-              <p className="text-xs text-gray-400 italic leading-relaxed">{userProfile.bio}</p>
+            <div className="relative max-w-[300px]">
+              <p className="text-xs text-slate-500 font-medium italic leading-relaxed">{userProfile.bio}</p>
             </div>
           )}
         </div>
 
-        {/* Level Progress */}
         {!isGuest && !isElite && (
-          <div className="mb-6 p-4 glass-card rounded-[24px] border-blue-400/10">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">升级至资深造物主</span>
-              <span className="text-[10px] font-mono text-blue-400">0 / 1 订单</span>
+          <div className="mb-8 p-6 bg-white rounded-[28px] border border-blue-50 shadow-sm">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">升级至资深造物主</span>
+              <span className="text-[10px] font-mono font-bold text-blue-500">0 / 1 订单</span>
             </div>
-            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full w-0 bg-blue-400 transition-all duration-1000"></div>
+            <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden shadow-inner">
+              <div className="h-full w-0 bg-blue-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.2)]"></div>
             </div>
-            <p className="text-[9px] text-gray-600 mt-2 font-medium">完成首个订单，即可解锁专属勋章与特权</p>
+            <p className="text-[10px] text-slate-400 mt-3 font-bold">完成首个订单，即可解锁专属勋章与特权</p>
           </div>
         )}
 
-        {/* Registration CTA */}
         {isGuest && (
-          <div className="mb-6">
+          <div className="mb-8">
             <button 
               onClick={() => setView(AppView.REGISTER)}
-              className="w-full py-4 rounded-[24px] purple-gradient shadow-xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
+              className="w-full py-5 rounded-[28px] purple-gradient shadow-2xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
             >
-              <Sparkles size={18} className="animate-pulse" />
-              <span className="text-base font-black text-white">登录 / 新用户注册</span>
+              <Sparkles size={20} className="text-white animate-pulse" />
+              <span className="text-base font-black text-white">同步灵魂 / 开启创作</span>
             </button>
           </div>
         )}
 
-        {/* Menu List */}
-        <div className="glass-card rounded-[24px] divide-y divide-white/5 overflow-hidden mb-6 bg-white/[0.02]">
+        <div className="bg-white rounded-[32px] divide-y divide-gray-50 overflow-hidden mb-8 border border-gray-100 shadow-sm">
           {menuItems.map((item, idx) => (
             <button 
               key={idx} 
               onClick={item.onClick}
-              className="w-full flex items-center justify-between p-5 active:bg-white/5 transition-colors text-left"
+              className="w-full flex items-center justify-between p-6 active:bg-gray-50 transition-colors text-left"
             >
-              <div className="flex items-center space-x-4">
-                <div className={`w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${item.color}`}>
-                  <item.icon size={20} />
+              <div className="flex items-center space-x-5">
+                <div className={`w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center ${item.color} shadow-sm border border-gray-50 group-hover:bg-white`}>
+                  <item.icon size={22} />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold">{item.label}</span>
+                  <span className="text-sm font-black text-gray-900">{item.label}</span>
                   {isGuest && item.label === '收货地址' && (
-                    <span className="text-[8px] text-gray-600 font-bold uppercase tracking-tighter">请先同步灵魂</span>
+                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter mt-0.5">请先同步灵魂数据</span>
                   )}
                 </div>
               </div>
-              <ChevronRight size={16} className="text-gray-600" />
+              <ChevronRight size={18} className="text-slate-200" />
             </button>
           ))}
         </div>
 
-        {/* Logout */}
         {!isGuest && (
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="w-full py-4 rounded-[24px] border border-red-500/30 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-500/5 transition-colors mb-4"
+            className="w-full py-5 rounded-[28px] border border-red-100 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-50 transition-all mb-6 bg-white/50"
           >
-            <LogOut size={18} />
-            <span>退出登录</span>
+            <LogOut size={20} />
+            <span>注销当前档案</span>
           </button>
         )}
 
-        {/* About Us - Discreet Link */}
-        <div className="flex flex-col items-center justify-center mt-4 space-y-4">
+        <div className="flex flex-col items-center justify-center mt-6 space-y-6">
           <button 
             onClick={() => setView(AppView.ABOUT_US)}
-            className="text-[10px] font-black text-gray-700 uppercase tracking-[0.2em] hover:text-purple-400 transition-colors"
+            className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] hover:text-purple-600 transition-colors"
           >
-            关于我们
+            关于我们 / ABOUT US
           </button>
           
-          <div className="flex items-center justify-center space-x-2 opacity-20">
-            <Info size={8} className="text-gray-500" />
-            <span className="text-[8px] font-mono text-gray-500 tracking-tighter uppercase">
-              Build: 2026.01.28-v6.跃壹知品
+          <div className="flex items-center justify-center space-x-2.5 opacity-30">
+            <Info size={10} className="text-slate-400" />
+            <span className="text-[9px] font-mono font-bold text-slate-400 tracking-tighter uppercase">
+              Build: 2026.01.28-v6.Lumos
             </span>
           </div>
         </div>
@@ -184,42 +178,41 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
 
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
-          <div className="relative glass-card w-full max-w-xs rounded-[32px] p-8 border-red-500/20 text-center animate-in zoom-in-95">
-            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="text-red-500" size={32} />
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
+          <div className="relative bg-white w-full max-w-xs rounded-[40px] p-10 border border-gray-100 text-center animate-in zoom-in-95 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
+              <AlertTriangle className="text-red-500" size={36} />
             </div>
-            <h3 className="text-xl font-bold mb-2 text-white">确认退出吗</h3>
-            <p className="text-gray-500 text-xs mb-8">退出后，您的私人灵感馆藏将暂停同步。</p>
+            <h3 className="text-2xl font-black mb-3 text-gray-900">确认注销吗</h3>
+            <p className="text-slate-400 text-xs mb-10 font-medium leading-relaxed">退出后，您的私人灵感馆藏将暂停同步。</p>
             <div className="space-y-4">
               <button 
                 onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold"
+                className="w-full py-4.5 bg-red-500 text-white rounded-[20px] font-black text-sm shadow-lg shadow-red-100 active:scale-95 transition-all"
               >
                 确认退出
               </button>
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="w-full py-4 bg-white/5 text-gray-400 rounded-2xl font-bold"
+                className="w-full py-4.5 bg-gray-50 text-slate-400 rounded-[20px] font-black text-sm border border-gray-100 active:scale-95 transition-all"
               >
-                取消
+                保留登录
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Avatar Zoom Overlay */}
       {isAvatarZoomed && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300"
           onClick={() => setIsAvatarZoomed(false)}
         >
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
-          <button className="absolute top-10 right-6 text-white p-2">
-            <X size={32} />
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-2xl"></div>
+          <button className="absolute top-10 right-6 text-slate-400 p-2 hover:text-gray-900 transition-colors">
+            <X size={36} />
           </button>
-          <div className="relative w-full aspect-square max-w-sm rounded-[48px] overflow-hidden border-2 border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.4)] animate-in zoom-in-95 duration-300">
+          <div className="relative w-full aspect-square max-w-sm rounded-[56px] overflow-hidden border-8 border-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-300">
             <img 
               src={userProfile.avatar} 
               className="w-full h-full object-cover" 

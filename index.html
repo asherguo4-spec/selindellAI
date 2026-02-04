@@ -10,9 +10,9 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#a855f7" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Selindell" />
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiMwMDAwMDAiLz48dGV4dCB4PSI1MCUiIHk9IjU0JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidJbnRlcicsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9Ijc1IiBmaWxsPSIjRkZGRkZGIiBzdHlsZT0ibGV0dGVyLXNwYWNpbmc6IC0zcHg7IHRleHQtdHJhbnNmb3JtOiBsb3dlcmNhc2U7Ij5zZWxpbmRlbGw8L3RleHQ+PC9zdmc+" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiNhODU1Zjc iLz48dGV4dCB4PSI1MCUiIHk9IjU0JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidJbnRlcicsIEFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9Ijc1IiBmaWxsPSIjRkZGRkZGIiBzdHlsZT0ibGV0dGVyLXNwYWNpbmc6IC0zcHg7IHRleHQtdHJhbnNmb3JtOiBsb3dlcmNhc2U7Ij5zZWxpbmRlbGw8L3RleHQ+PC9zdmc+" />
 
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,13 +24,15 @@
       :root { 
         --primary: #a855f7; 
         --secondary: #6366f1; 
-        --bg-deep: #000000; 
+        --bg-deep: #F8F9FB; 
+        --text-main: #1A1A1A;
+        --text-sub: #64748b;
       }
       
       body { 
         font-family: 'Inter', sans-serif; 
         background-color: var(--bg-deep); 
-        color: #f3f4f6; 
+        color: var(--text-main); 
         margin: 0; 
         overflow-x: hidden;
       }
@@ -44,26 +46,26 @@
         position: fixed;
         inset: 0;
         z-index: -1;
-        background: #000000;
+        background: radial-gradient(circle at 50% 50%, #FFFFFF 0%, #F1F4F9 100%);
         overflow: hidden;
       }
 
       .glow-orb {
         position: absolute;
-        width: 400px;
-        height: 400px;
+        width: 500px;
+        height: 500px;
         border-radius: 50%;
-        filter: blur(120px);
-        opacity: 0.1;
-        animation: float 25s infinite alternate ease-in-out;
+        filter: blur(100px);
+        opacity: 0.15;
+        animation: float 30s infinite alternate ease-in-out;
       }
-      .orb-1 { background: #a855f7; top: -10%; left: -10%; }
-      .orb-2 { background: #6366f1; bottom: -10%; right: -10%; animation-delay: -5s; }
+      .orb-1 { background: #d8b4fe; top: -10%; left: -10%; }
+      .orb-2 { background: #c7d2fe; bottom: -10%; right: -10%; animation-delay: -7s; }
 
       @keyframes float {
         0% { transform: translate(0, 0) scale(1); }
-        50% { transform: translate(50px, 100px) scale(1.1); }
-        100% { transform: translate(-30px, 50px) scale(0.9); }
+        50% { transform: translate(60px, 120px) scale(1.15); }
+        100% { transform: translate(-40px, 60px) scale(0.9); }
       }
 
       #initial-loader {
@@ -73,34 +75,35 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: #000000;
+        background: #FFFFFF;
         z-index: 9999;
         transition: opacity 0.5s ease;
       }
       
       .loader-dot {
-        width: 14px;
-        height: 14px;
+        width: 16px;
+        height: 16px;
         background: #a855f7;
         border-radius: 50%;
-        box-shadow: 0 0 30px rgba(168,85,247,0.6);
+        box-shadow: 0 0 25px rgba(168,85,247,0.3);
         animation: pulse 1.5s infinite;
       }
       
       @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.5; }
-        50% { transform: scale(1.5); opacity: 1; }
+        0%, 100% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(1.4); opacity: 0.8; }
       }
 
       .glass-card {
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.04);
       }
       
       .purple-gradient {
-        background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+        background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
       }
       
       .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -129,14 +132,13 @@
 
     <div id="initial-loader">
       <div class="loader-dot"></div>
-      <p style="margin-top: 24px; font-size: 11px; font-weight: 700; letter-spacing: 0.4em; color: #4b5563; text-transform: uppercase;">Initializing Selindell Core</p>
+      <p style="margin-top: 28px; font-size: 11px; font-weight: 800; letter-spacing: 0.5em; color: #94a3b8; text-transform: uppercase;">Initializing Selindell Core</p>
     </div>
 
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
 
     <script>
-      // 注册 Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').then(registration => {

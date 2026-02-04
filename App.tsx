@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AppView, GeneratedCreation, Address, UserProfile, UserLevel } from './types.ts';
 import Navbar from './components/Navbar.tsx';
 import Home from './views/Home.tsx';
+import Square from './views/Square.tsx';
 import Orders from './views/Orders.tsx';
 import Profile from './views/Profile.tsx';
 import Checkout from './views/Checkout.tsx';
@@ -123,7 +124,6 @@ const App: React.FC = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleAuthChange(session);
     });
-    // 登录成功后，如果刚才有待处理订单，回到结果页让用户再次点击下单
     if (pendingOrder) {
       setCurrentView(AppView.RESULT);
     } else {
@@ -190,9 +190,9 @@ const App: React.FC = () => {
 
   if (isLoadingProfile) {
     return (
-      <div className="w-full h-[100dvh] bg-[#0a0514] flex flex-col items-center justify-center overflow-hidden">
+      <div className="w-full h-[100dvh] bg-[#F8F9FB] flex flex-col items-center justify-center overflow-hidden">
         <div className="loader-dot mb-8"></div>
-        <p className="text-gray-500 font-bold text-[10px] tracking-[0.3em] uppercase">Soul Link Synchronizing...</p>
+        <p className="text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase">Soul Link Synchronizing...</p>
       </div>
     );
   }
@@ -204,8 +204,9 @@ const App: React.FC = () => {
       case AppView.GENERATING:
       case AppView.RESULT:
         return <Home currentView={currentView} setView={setCurrentView} onCreationSuccess={handleCreationSuccess} setPendingOrder={setPendingOrder} userId={userId} />;
+      case AppView.SQUARE:
+        return <Square />;
       case AppView.CHECKOUT:
-        // 核心修复逻辑：如果没有登录，展示登录页而不是黑屏
         if (!userId) {
           return <Register onRegisterSuccess={handleRegisterSuccess} onBack={() => setCurrentView(AppView.RESULT)} />;
         }
@@ -250,14 +251,14 @@ const App: React.FC = () => {
     <div className="min-h-[100dvh] bg-transparent relative flex flex-col items-center">
       <div className="w-full max-w-6xl flex flex-col min-h-[100dvh] relative overflow-x-hidden">
         {![AppView.CHECKOUT, AppView.ADDRESS_LIST, AppView.CUSTOMER_SERVICE, AppView.SETTINGS, AppView.REGISTER, AppView.ABOUT_US].includes(currentView) && (
-          <header className="h-16 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40 bg-transparent backdrop-blur-sm shrink-0">
+          <header className="h-20 px-6 md:px-12 flex items-center justify-between sticky top-0 z-40 bg-white/40 backdrop-blur-md shrink-0 border-b border-gray-100/50">
             <div className="flex items-center space-x-2.5">
-               <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.8)]"></div>
-               <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">SELINDELL</span>
+               <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.4)]"></div>
+               <span className="text-xl font-black tracking-tighter italic bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent uppercase">SELINDELL</span>
             </div>
             <button 
               onClick={() => setCurrentView(userId ? AppView.PROFILE : AppView.REGISTER)}
-              className="w-8 h-8 rounded-full border border-white/10 overflow-hidden relative active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full border border-gray-200 overflow-hidden relative active:scale-95 transition-all shadow-sm"
             >
               <img src={userProfile.avatar} className="w-full h-full object-cover" alt="profile" />
               {userProfile.level === 'elite' && (

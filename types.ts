@@ -1,6 +1,7 @@
 
 export enum AppView {
   HOME = 'home',
+  SQUARE = 'square',
   ORDERS = 'orders',
   PROFILE = 'profile',
   GENERATING = 'generating',

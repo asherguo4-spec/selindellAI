@@ -30,6 +30,8 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
     try {
       let finalUserId: string | null = null;
       let finalNickname = nickname.trim();
+      let existingAvatar: string | null = null;
+      let existingBio: string | null = null;
 
       if (isLoginMode) {
         // --- 登录模式 ---
@@ -40,13 +42,18 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
         if (error) throw error;
         finalUserId = data.user.id;
         
+        // 关键修复：从 select('nickname') 改为 select('*') 以获取所有已有信息
         const { data: profile } = await supabase
           .from('users')
-          .select('nickname')
+          .select('*')
           .eq('id', finalUserId)
           .single();
         
-        finalNickname = profile?.nickname || '用户';
+        if (profile) {
+          finalNickname = profile.nickname || '用户';
+          existingAvatar = profile.avatar;
+          existingBio = profile.bio;
+        }
         setSuccessMsg("登录成功，欢迎回来");
       } else {
         // --- 注册模式 ---
@@ -77,6 +84,14 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
           }
           
           finalUserId = loginData.user.id;
+          
+          // 尝试获取可能存在的旧档案
+          const { data: oldProfile } = await supabase.from('users').select('*').eq('id', finalUserId).single();
+          if (oldProfile) {
+            existingAvatar = oldProfile.avatar;
+            existingBio = oldProfile.bio;
+          }
+
           setSuccessMsg("检测到已有账号，正在同步您的数据...");
         } else {
           finalUserId = data.user?.id || null;
@@ -86,11 +101,15 @@ const Register: React.FC<RegisterProps> = ({ onRegisterSuccess, onBack }) => {
 
       // --- 统合：重建或更新数据库档案 ---
       if (finalUserId) {
+        // 关键修复：优先使用 existingAvatar 和 existingBio，如果没有再使用默认值
+        const avatarToSave = existingAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${finalNickname}`;
+        const bioToSave = existingBio || '在这里记录您的造物灵感';
+
         await supabase.from('users').upsert({
           id: finalUserId,
           nickname: finalNickname,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${finalNickname}`,
-          bio: '在这里记录您的造物灵感'
+          avatar: avatarToSave,
+          bio: bioToSave
         });
       }
       
