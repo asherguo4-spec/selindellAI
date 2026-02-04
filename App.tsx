@@ -1,19 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppView, GeneratedCreation, Address, UserProfile, UserLevel } from './types.ts';
-import Navbar from './components/Navbar.tsx';
-import Home from './views/Home.tsx';
-import Square from './views/Square.tsx';
-import Orders from './views/Orders.tsx';
-import Profile from './views/Profile.tsx';
-import Checkout from './views/Checkout.tsx';
-import AddressList from './views/AddressList.tsx';
-import CustomerService from './views/CustomerService.tsx';
-import SettingsView from './views/Settings.tsx';
-import Register from './views/Register.tsx';
-import AboutUs from './views/AboutUs.tsx';
-import { supabase, logAction } from './lib/supabase.ts';
-import { Loader2 } from 'lucide-react';
+import { AppView, GeneratedCreation, Address, UserProfile, UserLevel } from './types';
+import Navbar from './components/Navbar';
+import Home from './views/Home';
+import Square from './views/Square';
+import Orders from './views/Orders';
+import Profile from './views/Profile';
+import Checkout from './views/Checkout';
+import AddressList from './views/AddressList';
+import CustomerService from './views/CustomerService';
+import SettingsView from './views/Settings';
+import Register from './views/Register';
+import AboutUs from './views/AboutUs';
+import { supabase, logAction } from './lib/supabase';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -24,17 +23,18 @@ const App: React.FC = () => {
   const [orderCount, setOrderCount] = useState(0);
 
   const generateShortId = (id: string) => {
-    if (!id) return 'GUEST-0000';
-    return `SLD-${id.substring(0, 4).toUpperCase()}`;
+    if (!id) return '00000000';
+    // 按照用户需求，提取 ID 的前 8 位作为完整 UID 展示
+    return id.substring(0, 8).toUpperCase();
   };
 
   const getDefaultProfile = (id: string | null): UserProfile => ({
     id: id || '',
     shortId: generateShortId(id || ''),
-    nickname: id ? '同步中...' : '访客造物主',
+    nickname: id ? '加载中...' : '未登录',
     avatar: `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${id || 'guest'}`,
     email: '',
-    bio: id ? '正在加载您的造物灵魂...' : '登录后开启私人馆藏',
+    bio: id ? '正在获取用户信息...' : '登录后查看您的作品',
     isRegistered: !!id,
     level: 'visitor',
     orderCount: 0
@@ -84,7 +84,7 @@ const App: React.FC = () => {
           id: uid,
           shortId: generateShortId(uid),
           nickname: profileData.nickname,
-          bio: profileData.bio || '追求极致的造物美学',
+          bio: profileData.bio || '欢迎回来',
           avatar: profileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileData.nickname}`,
           email: session.user.email || '',
           isRegistered: true,
@@ -120,7 +120,7 @@ const App: React.FC = () => {
     setIsLoadingProfile(false);
   };
 
-  const handleRegisterSuccess = (nickname: string) => {
+  const handleRegisterSuccess = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       handleAuthChange(session);
     });
@@ -192,7 +192,7 @@ const App: React.FC = () => {
     return (
       <div className="w-full h-[100dvh] bg-[#F8F9FB] flex flex-col items-center justify-center overflow-hidden">
         <div className="loader-dot mb-8"></div>
-        <p className="text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase">Soul Link Synchronizing...</p>
+        <p className="text-slate-400 font-bold text-[10px] tracking-[0.4em] uppercase">正在同步账户信息...</p>
       </div>
     );
   }

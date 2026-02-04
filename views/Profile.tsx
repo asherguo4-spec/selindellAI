@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, AlertTriangle, Sparkles, UserPlus, Info, Crown, Gem, BadgeCheck, Copy } from 'lucide-react';
+import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, UserPlus, Info, Crown, Gem, BadgeCheck, Copy } from 'lucide-react';
 import { AppView, UserProfile } from '../types.ts';
 
 interface ProfileProps {
@@ -11,213 +11,157 @@ interface ProfileProps {
 
 const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => {
   const [isAvatarZoomed, setIsAvatarZoomed] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
   const isGuest = !userProfile.isRegistered;
   const isElite = userProfile.level === 'elite';
 
   const levelInfo = {
-    visitor: { label: '访客造物主', icon: UserPlus, color: 'text-slate-400', bg: 'bg-slate-50' },
-    creator: { label: '注册造物主', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
-    elite: { label: '资深造物主', icon: Crown, color: 'text-purple-600', bg: 'bg-purple-50' },
-  }[userProfile.level];
+    visitor: { label: '访客', icon: UserPlus, color: 'text-slate-400', bg: 'bg-slate-50' },
+    creator: { label: '正式成员', icon: Shield, color: 'text-blue-500', bg: 'bg-blue-50' },
+    elite: { label: '高级成员', icon: Crown, color: 'text-purple-600', bg: 'bg-purple-50' },
+  };
 
-  const menuItems = [
-    { 
-      icon: MapPin, 
-      label: '收货地址', 
-      color: 'text-purple-600', 
-      onClick: () => isGuest ? setView(AppView.REGISTER) : setView(AppView.ADDRESS_LIST) 
-    },
-    { 
-      icon: Headphones, 
-      label: '联系客服', 
-      color: 'text-purple-600', 
-      onClick: () => setView(AppView.CUSTOMER_SERVICE) 
-    },
-  ];
+  const currentLevel = levelInfo[userProfile.level as keyof typeof levelInfo] || levelInfo.visitor;
+
+  const handleHeaderClick = () => {
+    if (!isGuest) {
+      setView(AppView.SETTINGS);
+    }
+  };
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-6 flex-1 overflow-y-auto no-scrollbar pb-32">
-        <div className="flex justify-between items-center mb-8">
-          <div className="w-10"></div>
-          <h2 className="text-lg font-black text-gray-900 tracking-tight">{isGuest ? '欢迎光临' : '私人档案'}</h2>
+    <div className="h-full bg-[#f7f7f7] flex flex-col font-sans overflow-y-auto no-scrollbar">
+      {/* 顶部用户信息区域 - 仿微信风格，支持点击进入设置 */}
+      <div 
+        onClick={handleHeaderClick}
+        className={`bg-white px-6 pt-16 pb-12 flex items-center space-x-5 mb-2 shrink-0 transition-colors ${!isGuest ? 'active:bg-gray-50 cursor-pointer' : ''}`}
+      >
+        <div className="relative shrink-0">
+          <button 
+            onClick={(e) => { e.stopPropagation(); setIsAvatarZoomed(true); }}
+            className="w-16 h-16 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 active:scale-95 transition-transform shadow-sm"
+          >
+            <img src={userProfile.avatar} className="w-full h-full object-cover" alt="avatar" />
+          </button>
           {!isGuest && (
-            <button onClick={() => setView(AppView.SETTINGS)} className="p-2.5 bg-white border border-gray-100 rounded-full transition-all shadow-sm active:scale-95">
-              <Settings size={20} className="text-slate-400" />
-            </button>
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+               {isElite ? <Crown size={12} className="text-purple-600" /> : <BadgeCheck size={12} className="text-blue-500" />}
+            </div>
           )}
-          {isGuest && <div className="w-10"></div>}
         </div>
-
-        <div className="flex flex-col items-center mb-10 text-center px-4">
-          <div className="relative mb-6">
-            <div className={`absolute -inset-3 rounded-full opacity-10 blur-2xl ${isElite ? 'bg-purple-500' : 'bg-transparent'}`}></div>
+        
+        <div className="flex-1 flex flex-col justify-center min-w-0">
+          <div className="flex items-center space-x-2 mb-0.5">
+            <h1 className="text-2xl font-bold text-gray-900 truncate">{userProfile.nickname}</h1>
+            {isElite && <Gem size={16} className="text-purple-500 shrink-0" />}
+          </div>
+          <div className="flex flex-wrap items-center text-gray-400 gap-2">
+            <span className="text-[13px] font-medium text-gray-400 whitespace-nowrap overflow-visible">UID: {userProfile.shortId}</span>
             <button 
-              onClick={() => setIsAvatarZoomed(true)}
-              className={`relative w-28 h-28 rounded-full border-4 ${isGuest ? 'border-gray-100' : isElite ? 'border-purple-600' : 'border-blue-400'} p-1.5 shadow-2xl active:scale-95 transition-transform bg-white overflow-hidden`}
+              onClick={(e) => { e.stopPropagation(); /* 复制逻辑 */ }} 
+              className="shrink-0 text-gray-300 active:text-purple-500"
             >
-              <img 
-                src={userProfile.avatar} 
-                className="w-full h-full rounded-full object-cover" 
-                alt="Avatar" 
-              />
+               <Copy size={12} />
             </button>
-            {!isGuest && (
-              <div className={`absolute bottom-2 right-1 w-8 h-8 ${isElite ? 'bg-purple-600' : 'bg-blue-500'} rounded-full flex items-center justify-center border-4 border-white shadow-lg`}>
-                {isElite ? <Crown size={16} className="text-white" /> : <BadgeCheck size={16} className="text-white" />}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex flex-col items-center mb-5">
-            <div className="flex items-center justify-center space-x-2.5 mb-2">
-              <h1 className={`text-26 font-black tracking-tight ${isGuest ? 'text-slate-300' : 'text-gray-900'}`}>
-                {userProfile.nickname}
-              </h1>
-              {isElite && <Gem size={18} className="text-purple-500 animate-pulse" />}
-            </div>
-            
-            <div className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-gray-50 border border-gray-100 shadow-inner">
-              <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">
-                UID: {userProfile.shortId}
-              </span>
-              <Copy size={10} className="text-slate-300" />
+            <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded bg-gray-50 border border-gray-100 shrink-0">
+               <currentLevel.icon size={10} className={currentLevel.color} />
+               <span className={`text-[9px] font-bold ${currentLevel.color}`}>{currentLevel.label}</span>
             </div>
           </div>
-          
-          <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-transparent shadow-sm mb-6 ${levelInfo.bg}`}>
-            <levelInfo.icon size={14} className={levelInfo.color} />
-            <span className={`text-[10px] font-black uppercase tracking-widest ${levelInfo.color}`}>
-              {levelInfo.label}
-            </span>
-          </div>
-          
           {userProfile.bio && (
-            <div className="relative max-w-[300px]">
-              <p className="text-xs text-slate-500 font-medium italic leading-relaxed">{userProfile.bio}</p>
-            </div>
+            <p className="text-xs text-gray-400 mt-2 line-clamp-1">{userProfile.bio}</p>
           )}
         </div>
-
-        {!isGuest && !isElite && (
-          <div className="mb-8 p-6 bg-white rounded-[28px] border border-blue-50 shadow-sm">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">升级至资深造物主</span>
-              <span className="text-[10px] font-mono font-bold text-blue-500">0 / 1 订单</span>
-            </div>
-            <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden shadow-inner">
-              <div className="h-full w-0 bg-blue-500 transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.2)]"></div>
-            </div>
-            <p className="text-[10px] text-slate-400 mt-3 font-bold">完成首个订单，即可解锁专属勋章与特权</p>
-          </div>
-        )}
-
-        {isGuest && (
-          <div className="mb-8">
-            <button 
-              onClick={() => setView(AppView.REGISTER)}
-              className="w-full py-5 rounded-[28px] purple-gradient shadow-2xl shadow-purple-500/20 flex items-center justify-center space-x-3 active:scale-95 transition-all"
-            >
-              <Sparkles size={20} className="text-white animate-pulse" />
-              <span className="text-base font-black text-white">同步灵魂 / 开启创作</span>
-            </button>
-          </div>
-        )}
-
-        <div className="bg-white rounded-[32px] divide-y divide-gray-50 overflow-hidden mb-8 border border-gray-100 shadow-sm">
-          {menuItems.map((item, idx) => (
-            <button 
-              key={idx} 
-              onClick={item.onClick}
-              className="w-full flex items-center justify-between p-6 active:bg-gray-50 transition-colors text-left"
-            >
-              <div className="flex items-center space-x-5">
-                <div className={`w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center ${item.color} shadow-sm border border-gray-50 group-hover:bg-white`}>
-                  <item.icon size={22} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-gray-900">{item.label}</span>
-                  {isGuest && item.label === '收货地址' && (
-                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-tighter mt-0.5">请先同步灵魂数据</span>
-                  )}
-                </div>
-              </div>
-              <ChevronRight size={18} className="text-slate-200" />
-            </button>
-          ))}
-        </div>
-
-        {!isGuest && (
+        
+        {isGuest ? (
           <button 
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full py-5 rounded-[28px] border border-red-100 text-red-500 text-sm font-bold flex items-center justify-center space-x-2 active:bg-red-50 transition-all mb-6 bg-white/50"
+            onClick={(e) => { e.stopPropagation(); setView(AppView.REGISTER); }}
+            className="px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded-lg active:scale-95 shrink-0 shadow-sm"
           >
-            <LogOut size={20} />
-            <span>注销当前档案</span>
+            登录 / 注册
           </button>
+        ) : (
+          <ChevronRight size={20} className="text-gray-300 shrink-0" />
         )}
-
-        <div className="flex flex-col items-center justify-center mt-6 space-y-6">
-          <button 
-            onClick={() => setView(AppView.ABOUT_US)}
-            className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] hover:text-purple-600 transition-colors"
-          >
-            关于我们 / ABOUT US
-          </button>
-          
-          <div className="flex items-center justify-center space-x-2.5 opacity-30">
-            <Info size={10} className="text-slate-400" />
-            <span className="text-[9px] font-mono font-bold text-slate-400 tracking-tighter uppercase">
-              Build: 2026.01.28-v6.Lumos
-            </span>
-          </div>
-        </div>
       </div>
 
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
-          <div className="relative bg-white w-full max-w-xs rounded-[40px] p-10 border border-gray-100 text-center animate-in zoom-in-95 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
-              <AlertTriangle className="text-red-500" size={36} />
-            </div>
-            <h3 className="text-2xl font-black mb-3 text-gray-900">确认注销吗</h3>
-            <p className="text-slate-400 text-xs mb-10 font-medium leading-relaxed">退出后，您的私人灵感馆藏将暂停同步。</p>
-            <div className="space-y-4">
-              <button 
-                onClick={() => { setShowLogoutConfirm(false); onLogout(); }}
-                className="w-full py-4.5 bg-red-500 text-white rounded-[20px] font-black text-sm shadow-lg shadow-red-100 active:scale-95 transition-all"
-              >
-                确认退出
-              </button>
-              <button 
-                onClick={() => setShowLogoutConfirm(false)}
-                className="w-full py-4.5 bg-gray-50 text-slate-400 rounded-[20px] font-black text-sm border border-gray-100 active:scale-95 transition-all"
-              >
-                保留登录
-              </button>
-            </div>
+      {/* 升级进度区域 */}
+      {!isGuest && !isElite && (
+        <div className="bg-white px-6 py-4 mb-2 shrink-0">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[11px] font-bold text-gray-500">升级进度</span>
+            <span className="text-[11px] font-mono text-purple-600 font-bold">0 / 1 订单</span>
           </div>
+          <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-full w-0 bg-purple-600 transition-all duration-1000"></div>
+          </div>
+          <p className="text-[9px] text-gray-400 mt-1.5">完成首个订单，即可解锁专属勋章与特权</p>
         </div>
       )}
 
+      {/* 列表菜单区域 */}
+      <div className="bg-white mb-2 divide-y divide-gray-50 shrink-0">
+        <button 
+          onClick={() => isGuest ? setView(AppView.REGISTER) : setView(AppView.ADDRESS_LIST)}
+          className="w-full flex items-center justify-between px-6 py-4 active:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center space-x-4">
+            <MapPin size={22} className="text-purple-600" />
+            <span className="text-[16px] text-gray-900">收货地址</span>
+          </div>
+          <ChevronRight size={18} className="text-gray-200" />
+        </button>
+        
+        <button 
+          onClick={() => setView(AppView.CUSTOMER_SERVICE)}
+          className="w-full flex items-center justify-between px-6 py-4 active:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center space-x-4">
+            <Headphones size={22} className="text-purple-600" />
+            <span className="text-[16px] text-gray-900">联系客服</span>
+          </div>
+          <ChevronRight size={18} className="text-gray-200" />
+        </button>
+      </div>
+
+      {!isGuest && (
+        <div className="bg-white mb-6 shrink-0">
+          <button 
+            onClick={() => onLogout()}
+            className="w-full flex items-center justify-center py-4 text-red-500 font-medium text-[16px] active:bg-gray-50 transition-colors"
+          >
+            退出登录
+          </button>
+        </div>
+      )}
+
+      {/* 底部信息 */}
+      <div className="pb-24 flex flex-col items-center space-y-4 mt-4">
+        <button 
+          onClick={() => setView(AppView.ABOUT_US)}
+          className="text-xs text-gray-400 font-medium hover:text-purple-600 transition-colors"
+        >
+          关于我们
+        </button>
+        <div className="flex items-center justify-center space-x-2.5 opacity-30">
+          <Info size={10} className="text-slate-400" />
+          <span className="text-[9px] font-mono font-bold text-slate-400 tracking-tighter uppercase">
+            Build: 2026.01.28-v6.Lumos
+          </span>
+        </div>
+      </div>
+
+      {/* 头像放大模态框 */}
       {isAvatarZoomed && (
         <div 
           className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300"
           onClick={() => setIsAvatarZoomed(false)}
         >
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-2xl"></div>
-          <button className="absolute top-10 right-6 text-slate-400 p-2 hover:text-gray-900 transition-colors">
-            <X size={36} />
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
+          <button className="absolute top-10 right-6 text-white p-2">
+            <X size={32} />
           </button>
-          <div className="relative w-full aspect-square max-w-sm rounded-[56px] overflow-hidden border-8 border-white shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] animate-in zoom-in-95 duration-300">
-            <img 
-              src={userProfile.avatar} 
-              className="w-full h-full object-cover" 
-              alt="Zoomed Avatar" 
-            />
+          <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <img src={userProfile.avatar} className="w-full h-full object-cover" alt="avatar-large" />
           </div>
         </div>
       )}
