@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Settings, Shield, MapPin, Headphones, LogOut, ChevronRight, X, UserPlus, Info, Crown, Gem, BadgeCheck, Copy } from 'lucide-react';
+import { Shield, MapPin, Headphones, ChevronRight, X, UserPlus, Info, Crown, Gem, BadgeCheck, Copy } from 'lucide-react';
 import { AppView, UserProfile } from '../types.ts';
 
 interface ProfileProps {
@@ -29,8 +29,8 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
   };
 
   return (
-    <div className="h-full bg-[#f7f7f7] flex flex-col font-sans overflow-y-auto no-scrollbar">
-      {/* 顶部用户信息区域 - 仿微信风格，支持点击进入设置 */}
+    <div className="h-full bg-[#f7f7f7] flex flex-col font-sans overflow-y-auto no-scrollbar pb-32">
+      {/* 顶部用户信息区域 - 唯一设置入口 */}
       <div 
         onClick={handleHeaderClick}
         className={`bg-white px-6 pt-16 pb-12 flex items-center space-x-5 mb-2 shrink-0 transition-colors ${!isGuest ? 'active:bg-gray-50 cursor-pointer' : ''}`}
@@ -54,8 +54,8 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
             <h1 className="text-2xl font-bold text-gray-900 truncate">{userProfile.nickname}</h1>
             {isElite && <Gem size={16} className="text-purple-500 shrink-0" />}
           </div>
-          <div className="flex flex-wrap items-center text-gray-400 gap-2">
-            <span className="text-[13px] font-medium text-gray-400 whitespace-nowrap overflow-visible">UID: {userProfile.shortId}</span>
+          <div className="flex items-center text-gray-400 space-x-2 overflow-visible">
+            <span className="text-[13px] font-medium text-gray-400 whitespace-nowrap">UID: {userProfile.shortId}</span>
             <button 
               onClick={(e) => { e.stopPropagation(); /* 复制逻辑 */ }} 
               className="shrink-0 text-gray-300 active:text-purple-500"
@@ -84,7 +84,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         )}
       </div>
 
-      {/* 升级进度区域 */}
+      {/* 升级进度 */}
       {!isGuest && !isElite && (
         <div className="bg-white px-6 py-4 mb-2 shrink-0">
           <div className="flex justify-between items-center mb-1.5">
@@ -98,7 +98,7 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         </div>
       )}
 
-      {/* 列表菜单区域 */}
+      {/* 功能列表 - 移除设置项 */}
       <div className="bg-white mb-2 divide-y divide-gray-50 shrink-0">
         <button 
           onClick={() => isGuest ? setView(AppView.REGISTER) : setView(AppView.ADDRESS_LIST)}
@@ -134,8 +134,8 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         </div>
       )}
 
-      {/* 底部信息 */}
-      <div className="pb-24 flex flex-col items-center space-y-4 mt-4">
+      {/* 关于我们 */}
+      <div className="flex flex-col items-center space-y-4 mt-8">
         <button 
           onClick={() => setView(AppView.ABOUT_US)}
           className="text-xs text-gray-400 font-medium hover:text-purple-600 transition-colors"
@@ -144,23 +144,21 @@ const Profile: React.FC<ProfileProps> = ({ setView, userProfile, onLogout }) => 
         </button>
         <div className="flex items-center justify-center space-x-2.5 opacity-30">
           <Info size={10} className="text-slate-400" />
-          <span className="text-[9px] font-mono font-bold text-slate-400 tracking-tighter uppercase">
-            Build: 2026.01.28-v6.Lumos
+          <span className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-tighter">
+            Build: 2026.01.28-v7.Armor
           </span>
         </div>
       </div>
 
-      {/* 头像放大模态框 */}
+      {/* 头像放大 */}
       {isAvatarZoomed && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
           onClick={() => setIsAvatarZoomed(false)}
         >
           <div className="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
-          <button className="absolute top-10 right-6 text-white p-2">
-            <X size={32} />
-          </button>
-          <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+          <button className="absolute top-10 right-6 text-white p-2"><X size={32} /></button>
+          <div className="relative w-full aspect-square max-w-sm rounded-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
             <img src={userProfile.avatar} className="w-full h-full object-cover" alt="avatar-large" />
           </div>
         </div>

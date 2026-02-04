@@ -24,7 +24,6 @@ const App: React.FC = () => {
 
   const generateShortId = (id: string) => {
     if (!id) return '00000000';
-    // 按照用户需求，提取 ID 的前 8 位作为完整 UID 展示
     return id.substring(0, 8).toUpperCase();
   };
 
@@ -45,8 +44,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await handleAuthChange(session);
+      // 增加超时强制跳过，防止移动端环境网络波动导致的假死
+      const forceEndLoading = setTimeout(() => setIsLoadingProfile(false), 3000);
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await handleAuthChange(session);
+      } catch (e) {
+        console.error("Auth initialization failed", e);
+      } finally {
+        clearTimeout(forceEndLoading);
+        setIsLoadingProfile(false);
+      }
     };
 
     initAuth();
@@ -117,7 +126,6 @@ const App: React.FC = () => {
       setAddresses([]);
       setOrderCount(0);
     }
-    setIsLoadingProfile(false);
   };
 
   const handleRegisterSuccess = () => {

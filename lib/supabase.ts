@@ -2,20 +2,27 @@
 import { createClient } from '@supabase/supabase-js';
 
 const getSafeEnv = (name: string, fallback: string): string => {
-  const env = (import.meta as any).env;
-  const proc = (process as any);
-  let val = (env ? env[`VITE_${name}`] : null) || (proc && proc.env ? proc.env[name] : null);
+  let val: string | null = null;
+  
+  // 1. 尝试从 Vite 环境读取
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+      val = (import.meta as any).env[`VITE_${name}`];
+    }
+  } catch (e) {}
+
+  // 2. 尝试从 process 读取 (已在 index.html shim)
+  try {
+    if (!val && typeof process !== 'undefined' && process.env) {
+      val = (process.env as any)[name];
+    }
+  } catch (e) {}
   
   if (!val || typeof val !== 'string' || val.includes('{{') || val.includes('placeholder')) {
     return fallback;
   }
 
-  const trimmed = val.trim();
-  if (/[\u4e00-\u9fa5]/.test(trimmed)) {
-    return fallback;
-  }
-
-  return trimmed;
+  return val.trim();
 };
 
 export const SUPABASE_URL = getSafeEnv('SUPABASE_URL', 'https://rnxiudmyhqqbyzhzjpqb.supabase.co');
@@ -32,14 +39,8 @@ const createSupabaseFallback = () => {
       single: dummyPromise
     }),
     upsert: dummyPromise,
-    insert: () => ({ 
-      select: () => ({ 
-        single: dummyPromise 
-      }) 
-    }),
-    delete: () => ({ 
-      eq: dummyPromise 
-    })
+    insert: () => ({ select: () => ({ single: dummyPromise }) }),
+    delete: () => ({ eq: dummyPromise })
   });
 
   return {
@@ -75,7 +76,5 @@ export const logAction = async (userId: string, action: string, details?: any) =
       details,
       created_at: new Date().toISOString()
     }]);
-  } catch (e) {
-    // console.debug('Log action skipped', e);
-  }
+  } catch (e) {}
 };
