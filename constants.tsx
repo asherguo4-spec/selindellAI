@@ -21,7 +21,7 @@ export const CREATION_STYLES: CreationStyle[] = [
     name: '机甲未来',
     description: '机甲风',
     promptSuffix: 'as a highly detailed robotic mecha suit, metallic textures, hydraulic parts, armored plating, sci-fi aesthetic, Gundam inspiration',
-    imageUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=400&h=400'
+    imageUrl: 'https://images.unsplash.com/photo-1589254065878-42c9da997008?auto=format&fit=crop&q=80&w=400&h=400'
   },
   {
     id: 'retro',

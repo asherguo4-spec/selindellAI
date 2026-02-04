@@ -29,7 +29,7 @@ const CAROUSEL_ITEMS = [
     title: '第一次造物，我们带你完成', 
     subtitle: '从一句灵感到实体手办，全流程体验', 
     identity: '官方活动 · 新手专属',
-    image: 'https://images.unsplash.com/photo-1605218403317-6e55ef9977bb?auto=format&fit=crop&q=80&w=800&h=400' 
+    image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800&h=400' 
   },
 ];
 
